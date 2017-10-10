@@ -2,7 +2,7 @@
 Incremental profiling based on gprof, with analysis tools
 
 
-How to Use Libipr
+###How to Use Libipr
 
 Libipr is an "incremental profiler" which means it generates gprof profiles
 at a constant rate during application execution, rather than just one at 
@@ -32,7 +32,9 @@ generates. To use all of the capabilities, follow these steps
 8. Use "cluster.py" to run clustering on the output file from step 7. This 
    script needs the Python sklearn package installed
 
----------Sample Run Script for steps 3-6:---------
+
+### Sample Run Script for steps 3-6:
+```
  #!/bin/sh
  # IPR_DATADIR -- directory for sample data files; default none (MUST EXIST!)
  export IPR_DATADIR=gdata
@@ -53,10 +55,12 @@ generates. To use all of the capabilities, follow these steps
  rm -f gmon-*.out gprof-*.out gdata/g*.out ipr-err.out ipr.log
  export LD_PRELOAD=./libipr.so
  ./testpr 30 2> ipr-err.out
----------end-sample-run-script---------
+ #---------end-sample-run-script---------
+```
 
----------sample setps 7,8---------
+### Sample setps 7,8
+```
 ./gensvm.py ./testpr 13 > ipr-13.svm
 ./cluster.py ipr-13.svm
-
+```
 
