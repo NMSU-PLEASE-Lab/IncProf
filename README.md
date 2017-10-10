@@ -2,7 +2,7 @@
 Incremental profiling based on gprof, with analysis tools
 
 
-###How to Use Libipr
+### How to Use Libipr
 
 Libipr is an "incremental profiler" which means it generates gprof profiles
 at a constant rate during application execution, rather than just one at 
