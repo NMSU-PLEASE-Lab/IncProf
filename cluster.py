@@ -5,7 +5,16 @@
 #   to infer the "best k" result for clustering
 # - we use this to decide which samples of execution belong to the same phase
 #
-# Usage: program <input-file>
+# Usage: program <input-file> [idmap-file] [flip]
+
+# The input file is in "libsvm" format, described below. The idmap file, if
+# given, is a JSON-formatted file that can be read in as a Python dictionary,
+# the keys of which are the index values in the input file, and the values
+# of which are strings that describe what the index value means. These will
+# be printed in the cluster descriptions so that an understandable mapping
+# can be made. If the third argument is the string "flip", then the idmap
+# key-value pairs were reversed, and the whole thing is flipped (values
+# become keys, and vice versa).
 
 # LIBSVM format
 # https://stats.stackexchange.com/questions/61328/libsvm-data-format
@@ -29,12 +38,16 @@
 #interface, returning a tuple (X, y) consisting of a n_samples * n_features 
 #numpy array X and an array of length n_samples containing the targets y.
 
-import re;
-import sys;
-import os;
-import sklearn.datasets;
-import sklearn.cluster;
-import math;
+import re
+import sys
+import os
+import sklearn.datasets
+import sklearn.cluster
+import math
+import json
+
+# set true for lots of debugging out (will interfere with output formats)
+debug = False
 
 # Idea for selecting best K: compare to "gold standard" params
 # generated from synthetic data
@@ -55,6 +68,38 @@ optClusterParams = [ \
 ( 1.000, 0.265, 0.128, 0.088, 0.065, 0.047, 0.044, 0.041 ), \
 ( 1.000, 0.266, 0.128, 0.081, 0.059, 0.046, 0.035, 0.033 ), \
 ( 1.000, 0.259, 0.124, 0.074, 0.054, 0.043, 0.034, 0.027 ) ]
+
+#
+# Normalize a list of real numbers
+# - used to show relative importance of each value in a data vector
+#
+def normalize(vals):
+   max = -9999999
+   for v in vals:
+      if max < v:
+         max = v
+   for i in range(len(vals)):
+      vals[i] = vals[i] / max
+      
+#
+# Load the ID Map file
+#
+def loadIdMap(filename,flip):
+   idmap = {}
+   f = open(filename)
+   if f == None:
+      return idmap
+   nmap = json.load(f)
+   f.close()
+   if nmap == None:
+      return {}
+   if flip:
+      # flip to make reverse map
+      for n in nmap:
+         idmap[nmap[n]] = n
+      return idmap
+   else:
+      return nmap
 
 #
 # Idea: generate ideal clustering parameters from synthetic data (above)
@@ -114,28 +159,44 @@ def findOptKElbow(clParams):
 #
 # Main program
 #
-if len(sys.argv) != 2 and len(sys.argv) != 3:
-   print "Usage: {0} <libsvm-format-data-file> [K]".format(sys.argv[0])
+argc = len(sys.argv)
+if argc < 2 or argc > 4:
+   print "Usage: {0} <libsvm-format-data-file> [idmap-file] [flip]".format(sys.argv[0])
    exit(1)
-   
-inFile = sys.argv[1]
 
-X, y = sklearn.datasets.load_svmlight_file(inFile)
+dataFilename = sys.argv[1]
+idmapFilename = ""
+flip = False
+if argc >= 3:
+   idmapFilename = sys.argv[2]
+if argc == 4 and sys.argv[3] == "flip":
+   flip = True
 
 #
-# if K is given, do only this K
+# Initialize SciKit data structures
 #
-if len(sys.argv) == 3:
-   i = int(sys.argv[2])
-   c = sklearn.cluster.k_means(X,i,n_init=30)
-   print i, c[1], "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
-   exit()
+X, y = sklearn.datasets.load_svmlight_file(dataFilename)
 
-#print X
-#print y
+#
+# OBSOLETE: if K is given, do only this K
+#
+# if len(sys.argv) == 3:
+#    i = int(sys.argv[2])
+#    c = sklearn.cluster.k_means(X,i,n_init=30)
+#    print i, c[1], "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
+#    exit()
+
+if debug:
+   print X
+   print y
+
+centroids = []
 cld = []
 clparms = []
 basedist = 0
+#
+# Run clustering for K=1 to K=8, save results and print metrics
+#
 print "K  metrics"
 for i in range(1,9):
    #print "dtype", X.dtype
@@ -151,10 +212,18 @@ for i in range(1,9):
       basedist = c[2]
    #print i, c[1], "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
    print i, "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
+   centroids.append(c[0])
    cld.append(c[1])
    clparms.append(c[2]/basedist)
-print "bestK:", findOptimalK(clparms), "elbK:", findOptKElbow(clparms)
+#
+# Find "best" K using a couple of different methods, and print them
+bestk = findOptimalK(clparms)
+elbowk = findOptKElbow(clparms)
+print "bestK:", bestk, "elbowK:", elbowk
 
+#
+# Print the clustering of each data element vertically
+#
 print "V\K:",
 for i in range(1,9):
    print i,
@@ -164,5 +233,42 @@ for j in range(0,len(cld[0])):
    for i in range(0,8):
       print cld[i][j],
    print
-   
+
+#
+# Load Id Map if available
+idmap = None
+if idmapFilename != "":
+   idmap = loadIdMap(idmapFilename,flip)
+   if debug:
+      print idmap
+
+#
+# Print out characteristics of cluster centroids for bestK and elbowK
+#
+print "K = ",bestk[0],"Centroids"
+n = 1
+for c in centroids[bestk[0]-1]:
+   print "Cluster",n,":"
+   normalize(c)
+   for f in range(len(c)):
+      if c[f] > 0.00099:
+         if idmap != None and f in idmap:
+            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],idmap[f])
+         else:
+            print "   {0:d}: {1:.3f}".format(f,c[f])
+   n += 1
+if bestk[0] == elbowk[0]:
+   exit()
+print "K = ",elbowk[0],"Centroids"
+n = 1
+for c in centroids[elbowk[0]-1]:
+   print "Cluster",n,":"
+   normalize(c)
+   for f in range(len(c)):
+      if c[f] > 0.00099:
+         if idmap != None and f in idmap:
+            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],idmap[f])
+         else:
+            print "   {0:d}: {1:.3f}".format(f,c[f])
+   n += 1
 
