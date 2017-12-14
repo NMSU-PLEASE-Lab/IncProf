@@ -167,23 +167,27 @@ void libiprSigHandler(int signum)
    static int dcount = 0;
    char ofname[128];
    char nfname[128];
+//   char cmd[1024];
    struct timespec stime;
    double ftime;
    FILE *lf;
    if (debug)
       fprintf(stderr, "libipr: in signal handler\n");
 
+   sprintf(nfname,"GMON_OUT_PREFIX=gmon-%d",dcount);
+   /* OMAR */
+   putenv(nfname);
+
    // check function pointer to be safe
    if (write_gmon == NULL)
        return;
    write_gmon();
    strcpy(ofname,"gmon.out");
-   sprintf(nfname,sampleFilename,dcount);
+  // sprintf(nfname,sampleFilename,dcount);
    if (debug)
       fprintf(stderr, "moving (%s) to (%s)\n",ofname,nfname);
-   if (rename(ofname, nfname)) {
-      perror("File rename failed");
-   }
+
+   if (debug) {
    // record time of sample
    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &stime);
    ftime = stime.tv_sec;
@@ -192,6 +196,7 @@ void libiprSigHandler(int signum)
    if (lf) {
       fprintf(lf,"sample %d at %g ( %s )\n",dcount,ftime,ctime(0));
       fclose(lf);
+   }
    }
    dcount++;
    // redo timer and handler?

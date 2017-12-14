@@ -37,21 +37,31 @@
 import re;
 import sys;
 import os;
-
+import fnmatch;
+import subprocess;
 recordDiff = True
 progFile = "none"
 lastData = {}
 stepData = []
 funcIDMap = {}
 nextFunctionID = 1
+numFiles = 0
 
 #
 # Generate gprof file for one sample, and record its data
 #
-def gensvm(fileNum):
+def gensvm(filename, fileNum):
    global nextFunctionID
-   os.system("gprof -b {0} gmon-{1}.out > gprof-{1}.out".format(progFile,fileNum))
-   inf = open("gprof-{0}.out".format(fileNum))
+   global numFiles
+#   try:
+	#print "1"
+   os.system("gprof -b {0} {1} > {1}.new".format(progFile,filename))
+	#print "2"
+ #  except OSError:
+#	print "3"
+   #return
+   #print "{0}.new".format(filename)
+   inf = open("{0}.new".format(filename))
    inTable = False
    fdata = []
    #funcIDMap = {}
@@ -82,7 +92,8 @@ def gensvm(fileNum):
          #print line
          # change function match from \w to non-newline because 
          # of C++ class/template names (:,<>,spaces,...)
-         v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
+         v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\S*([^\n\r]*)", line)
+	 #print v
          if v != None:
             #print v.group(1), v.group(2), v.group(3), v.group(4), 
             #print v.group(5), v.group(6), funcIDMap[v.group(7)]
@@ -93,11 +104,14 @@ def gensvm(fileNum):
             # 5 and 6 are self ms/call and tot ms/call
             if not (v.group(7) in funcIDMap):
                funcIDMap[v.group(7)] = nextFunctionID
+	       #print "hi", v.group(5), v.group(6), funcIDMap[v.group(7)], v.group(7)
                nextFunctionID += 1
             fid = funcIDMap[v.group(7)]
+	    #print "fid=",fid,"len=",len(fdata)
             while len(fdata) <= fid:
                fdata.append(None)
             fdata[fid] = (fpct, fttime, fstime, fcalls)
+	    #print "fdata[fid]", fdata[fid]
    #print fileNum,
    # Put all function data together in one list for the sample step
    # - must iterate through fdata (function data) and then add it to
@@ -107,27 +121,29 @@ def gensvm(fileNum):
    for i,v in enumerate(fdata):
       if v == None:
          continue
-      #print v
+      #print v, "i=", i
       #print "{0}:{1} {2}:{3}".format(i*10,v[0]/10.0,i*10+1,v[1]),
       while len(step) <= i*10+5:
          step.append(0)
       #step[i*10] = v[0]/10.0
       step[i*10+1] = v[2]   # self time
       step[i*10+2] = v[3]   # num calls
+
    while len(stepData) <= fileNum:
       stepData.append(None)
+
    stepData[fileNum] = step
-   #print ""
+   #print "stepData[fileNum]=", stepData[fileNum]
 
 #
 # Output aggregate sample data in libsvm format
 #
 def outputData(totSteps):
-   pstep = [0]*1000;
+   pstep = [0]*10000;
    for i,step in enumerate(stepData):
       print i,
       for k in range(10,len(step),10):
-         #print "{0}:{1} {2}:{3}".format(k,step[k],k+1,step[k+1]),
+         print "{0}:{1} {2}:{3}".format(k,step[k],k+1,step[k+1]),
          # added skip if close to zero since getting many 0s on minixyce
          if abs(step[k+1]-pstep[k+1]) > 0.001:
              print "{0}:{1}".format(k+1,round(step[k+1]-pstep[k+1],3)),
@@ -137,7 +153,7 @@ def outputData(totSteps):
              print "{0}:{1}".format(k+2,round(dc/10,4)),
       print ""
       pstep = step
-      pstep.extend([0]*1000)
+      pstep.extend([0]*len(step))
       
       
 # print function name mapping
@@ -152,14 +168,27 @@ def outputFuncNames():
 # Main program
 #
 if len(sys.argv) != 3:
-   print "Usage: {0} <exec-binary-filename> <max-sample-#>".format(sys.argv[0])
+   print "Usage: {0} <exec-binary-filename> <filenames-regexp>".format(sys.argv[0])
    exit(1)
    
 progFile = sys.argv[1]
-numFiles = int(sys.argv[2])
+#numFiles = int(sys.argv[2])
+filename_regexp = sys.argv[2]
 
-for i in range(0,numFiles+1):
-   gensvm(i)
+#print "start"
+
+i = 0
+listOfFiles = os.listdir('.')  
+pattern = filename_regexp
+for entry in listOfFiles:  
+    if fnmatch.fnmatch(entry, pattern):
+	gensvm(entry, i)
+	i = i + 1
+	#print (entry)
+numFiles = i
+#print "numFiles=", numFiles
+#for i in range(0,numFiles+1):
+#   gensvm(i)
 outputData(numFiles)
 outputFuncNames()
 
