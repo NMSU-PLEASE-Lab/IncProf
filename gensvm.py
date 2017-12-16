@@ -121,7 +121,7 @@ def gensvm(filename, fileNum):
    for i,v in enumerate(fdata):
       if v == None:
          continue
-      #print v, "i=", i
+      print v, "i=", i
       #print "{0}:{1} {2}:{3}".format(i*10,v[0]/10.0,i*10+1,v[1]),
       while len(step) <= i*10+5:
          step.append(0)
@@ -133,7 +133,7 @@ def gensvm(filename, fileNum):
       stepData.append(None)
 
    stepData[fileNum] = step
-   #print "stepData[fileNum]=", stepData[fileNum]
+   print "stepData[fileNum]=", stepData[fileNum]
 
 #
 # Output aggregate sample data in libsvm format
@@ -143,7 +143,7 @@ def outputData(totSteps):
    for i,step in enumerate(stepData):
       print i,
       for k in range(10,len(step),10):
-         print "{0}:{1} {2}:{3}".format(k,step[k],k+1,step[k+1]),
+         #print "{0}:{1} {2}:{3}".format(k,step[k],k+1,step[k+1]),
          # added skip if close to zero since getting many 0s on minixyce
          if abs(step[k+1]-pstep[k+1]) > 0.001:
              print "{0}:{1}".format(k+1,round(step[k+1]-pstep[k+1],3)),
@@ -153,7 +153,7 @@ def outputData(totSteps):
              print "{0}:{1}".format(k+2,round(dc/10,4)),
       print ""
       pstep = step
-      pstep.extend([0]*len(step))
+      pstep.extend([0]*10000)
       
       
 # print function name mapping
