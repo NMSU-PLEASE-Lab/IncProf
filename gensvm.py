@@ -155,8 +155,12 @@ def gensvm(filename, fileNum):
 #
 def outputData(totSteps):
    pstep = [0]*10000;
+   step_num = 0
    for i,step in enumerate(stepData):
-      print i,
+      #print "step=", step
+      if (not step):
+	 continue
+      print step_num,
       for k in range(10,len(step),10):
          #print "{0}:{1} i{2}:{3}".format(k,step[k],k+1,step[k+1]),
 	 #print "{0}:{1} ".format(k,step[k]),
@@ -171,6 +175,7 @@ def outputData(totSteps):
       print ""
       pstep = step
       pstep.extend([0]*10000)
+      step_num = step_num + 1
       
       
 # print function name mapping
