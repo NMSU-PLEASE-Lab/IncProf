@@ -172,12 +172,6 @@ static void libiprInitialize()
    if (debug)
       fprintf(stderr, "libipr: done setting up interval timer\n");
 
-/*   while (1) {
-	libiprSigHandler(0);
-	usleep(1000000);
-   }*/
-
-
    err = pthread_create(&pth, NULL, &libiprSigHandler, NULL);
    if (err != 0)
 	fprintf(stderr, "libipr: can't create thread :[%s]", strerror(err));
