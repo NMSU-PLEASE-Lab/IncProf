@@ -92,26 +92,41 @@ def gensvm(filename, fileNum):
          #print line
          # change function match from \w to non-newline because 
          # of C++ class/template names (:,<>,spaces,...)
-         v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\S*([^\n\r]*)", line)
-	 #print v
-         if v != None:
-            #print v.group(1), v.group(2), v.group(3), v.group(4), 
-            #print v.group(5), v.group(6), funcIDMap[v.group(7)]
-            fpct = float(v.group(1))
+         v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
+	 #print "line = ", line
+	 #print "v = ", v
+	 # short is 1 if the line have missing last 3 values
+	 short = 0
+	 if v == None:
+		v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
+		short = 1
+
+	 if v != None:
+            #print v.group(1), v.group(2), v.group(3), v.group(4) 
+	    #print v.group(5), v.group(6), v.group(7)
+	    fpct = float(v.group(1))
             fttime = float(v.group(2))
-            fstime = float(v.group(3))
-            fcalls = int(v.group(4))
-            # 5 and 6 are self ms/call and tot ms/call
-            if not (v.group(7) in funcIDMap):
-               funcIDMap[v.group(7)] = nextFunctionID
-	       #print "hi", v.group(5), v.group(6), funcIDMap[v.group(7)], v.group(7)
-               nextFunctionID += 1
-            fid = funcIDMap[v.group(7)]
+      	    fstime = float(v.group(3))
+	    if short == 0:
+		fcalls = int(v.group(4))
+		# 5 and 6 are self ms/call and tot ms/call
+	        if not (v.group(7) in funcIDMap):
+    			funcIDMap[v.group(7)] = nextFunctionID
+  				#print "hi", v.group(5), v.group(6), funcIDMap[v.group(7)], v.group(7)
+            		nextFunctionID += 1
+	        fid = funcIDMap[v.group(7)]
+	    else:
+		fcalls = 0
+            	if not (v.group(4) in funcIDMap):
+           	    funcIDMap[v.group(4)] = nextFunctionID
+	    	    nextFunctionID += 1
+    	    	fid = funcIDMap[v.group(4)]
+
 	    #print "fid=",fid,"len=",len(fdata)
             while len(fdata) <= fid:
                fdata.append(None)
             fdata[fid] = (fpct, fttime, fstime, fcalls)
-	    #print "fdata[fid]", fdata[fid]
+	    #print "fdata[",fid,"]", fdata[fid]
    #print fileNum,
    # Put all function data together in one list for the sample step
    # - must iterate through fdata (function data) and then add it to
@@ -143,14 +158,16 @@ def outputData(totSteps):
    for i,step in enumerate(stepData):
       print i,
       for k in range(10,len(step),10):
-         #print "{0}:{1} {2}:{3}".format(k,step[k],k+1,step[k+1]),
+         #print "{0}:{1} i{2}:{3}".format(k,step[k],k+1,step[k+1]),
+	 #print "{0}:{1} ".format(k,step[k]),
+	 #print "{0}:{1}-{2}:{3}".format(k+1,step[k+1],k+1,pstep[k+1]),
          # added skip if close to zero since getting many 0s on minixyce
          if abs(step[k+1]-pstep[k+1]) > 0.001:
              print "{0}:{1}".format(k+1,round(step[k+1]-pstep[k+1],3)),
          # num calls is processed using fraction of total, to keep < 1
-         dc = (step[k+2]-pstep[k+2]) / float(step[k+2])
-         if dc > 0.1:
-             print "{0}:{1}".format(k+2,round(dc/10,4)),
+         #dc = (step[k+2]-pstep[k+2]) / float(step[k+2])
+         #if dc > 0.1:
+	#		print "{0}:{1}".format(k+2,round(dc/10,4)),
       print ""
       pstep = step
       pstep.extend([0]*10000)

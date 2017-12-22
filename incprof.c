@@ -7,6 +7,8 @@
 #include <signal.h>
 #include <time.h>
 #include <errno.h>
+#include <pthread.h>
+#include <libgen.h>
 
 // Environment variables
 // IPR_DATADIR -- directory for sample data files; default none
@@ -57,8 +59,9 @@ void (*write_gmon)(void) = NULL;
 // Finalization
 // - nothing?
 
-void libiprSigHandler(int signum);
+void* libiprSigHandler();
 static int debug = 0;
+pthread_t pth;
 
 __attribute__((constructor))
 static void libiprInitialize()
@@ -68,7 +71,33 @@ static void libiprInitialize()
    void (*old_sh)(int);
    char *paramstr;
    long int gmonOffset = WRGMON_OFFSET;
+   int err;
+   char exe[1024];
+   int ret;
 
+   //printf("libipr: start... \n");
+   paramstr = getenv("IPR_APPNAME");
+   if (!paramstr) {
+	fprintf(stderr, "libipr: IPR_APPNAME missing\n");
+	return;
+   }
+
+   /* Get the excutable name and check it with the Enviroment variable */
+   ret = readlink("/proc/self/exe",exe,sizeof(exe)-1);
+   if(ret ==-1) {
+       fprintf(stderr,"libipr: ERROR can't get the executabel name \n");
+       exit(1);
+   }
+   exe[ret] = 0;
+
+   //fprintf(stderr, "libipr: IPR_APPNAME = %s and path = %s\n", paramstr, exe);
+   /* if the excutable name is not similar to IPR_APPNAME then return */
+   if (strcmp(basename(exe), paramstr) != 0) {
+	fprintf(stderr, "libipr: wrong exec file, path is %s \n", exe);
+	return;
+   }
+
+  
    paramstr = getenv("IPR_DEBUG");
    if (paramstr) {
       debug = strtol(paramstr,0,0);
@@ -135,7 +164,7 @@ static void libiprInitialize()
    itv.it_value = itv.it_interval;
    old_itv.it_interval.tv_sec = 0;
    old_itv.it_interval.tv_usec = 0;
-   setitimer(ITIMER_VIRTUAL, &itv, &old_itv);
+   //setitimer(ITIMER_VIRTUAL, &itv, &old_itv);
    if (old_itv.it_interval.tv_sec != 0 || old_itv.it_interval.tv_usec != 0) {
       fprintf(stderr, "libipr: Warning, someone using ITIMER_VIRTUAL already!\n");
       fprintf(stderr, "libipr: --> Behavior is not predictable!\n");
@@ -143,12 +172,22 @@ static void libiprInitialize()
    if (debug)
       fprintf(stderr, "libipr: done setting up interval timer\n");
 
+/*   while (1) {
+	libiprSigHandler(0);
+	usleep(1000000);
+   }*/
+
+
+   err = pthread_create(&pth, NULL, &libiprSigHandler, NULL);
+   if (err != 0)
+	fprintf(stderr, "libipr: can't create thread :[%s]", strerror(err));
+
    // man page: use sigaction instead?
-   old_sh = signal(SIGVTALRM, libiprSigHandler);
+   /*old_sh = signal(SIGVTALRM, libiprSigHandler);
    if (old_sh != SIG_IGN && old_sh != SIG_DFL) {
       fprintf(stderr, "libipr: Warning, someone using SIGVTALRM already!\n");
       fprintf(stderr, "libipr: --> Behavior is not predictable!\n");
-   }
+   }*/
    if (debug)
       fprintf(stderr, "libipr: done setting up signal handler, constructor done\n");
 }
@@ -159,10 +198,10 @@ static void libiprFinalize()
    if (debug)
       fprintf(stderr, "libipr: in library destructor\n");
    // nothing to do here? call to make sure one write-out
-   libiprSigHandler(0);
+   //libiprSigHandler();
 }
 
-void libiprSigHandler(int signum)
+void* libiprSigHandler(void *arg)
 {
    static int dcount = 0;
    char ofname[128];
@@ -171,6 +210,8 @@ void libiprSigHandler(int signum)
    struct timespec stime;
    double ftime;
    FILE *lf;
+
+   while (1) {
    if (debug)
       fprintf(stderr, "libipr: in signal handler\n");
 
@@ -202,6 +243,8 @@ void libiprSigHandler(int signum)
    // redo timer and handler?
    if (debug)
       fprintf(stderr, "libipr: done with signal handler\n");
+   usleep(1000000);
+   }
 }
 
 

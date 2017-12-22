@@ -20,5 +20,5 @@ test-dump-gcov: test-dump-gcov.c
 	gcc -fprofile-arcs -ftest-coverage test-dump-gcov.c -o test-dump-gcov
 
 gread: gread.c
-	gcc -fprofile-arcs -ftest-coverage -I. gread.c -L/usr/lib/gcc/x86_64-linux-gnu/5 -lgcov -o gr
+	gcc -fprofile-arcs -ftest-coverage -I. gread.c -lgcov -o gr
 

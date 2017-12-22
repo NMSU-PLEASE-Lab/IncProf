@@ -28,6 +28,7 @@ if len(sys.argv) != 2:
 libfname = sys.argv[1]
 
 arch = platform.architecture()[0]
+#arch = "32bit"
 if arch=="32bit":
    keyInsn = "push   %ebp"  # 32-bit first insn in function
 else:
