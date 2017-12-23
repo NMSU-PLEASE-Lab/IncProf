@@ -228,14 +228,12 @@ filename_regexp = sys.argv[2]
 #print "start"
 
 i = 0
-listOfFiles = os.listdir('.')  
+listOfFiles = glob.glob(filename_regexp)
 total = len(listOfFiles) * 2 + 2
-pattern = filename_regexp
 for entry in listOfFiles:  
-    if fnmatch.fnmatch(entry, pattern):
-	gensvm(entry, i)
-	i = i + 1
-        progress(i, total, status='Extract Gproph files')
+   gensvm(entry, i)
+   i = i + 1
+   progress(i, total, status='Extract Gproph files')
 	#print (entry)
 numFiles = i
 #print "numFiles=", numFiles
