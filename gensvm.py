@@ -47,6 +47,19 @@ funcIDMap = {}
 nextFunctionID = 1
 numFiles = 0
 
+
+# Show progress
+def progress(count, total, status=''):
+    bar_len = 60
+    filled_len = int(round(bar_len * count / float(total)))
+
+    percents = round(100.0 * count / float(total), 1)
+    bar = '=' * filled_len + '-' * (bar_len - filled_len)
+
+    sys.stderr.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
+    sys.stderr.flush()  # As suggested by Rom Ruben (see: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/27871113#comment50529068_27871113)
+
+
 #
 # Generate gprof file for one sample, and record its data
 #
@@ -160,6 +173,20 @@ def outputData(totSteps):
       #print "step=", step
       if (not step):
 	 continue
+
+      check = 0
+      # Check if the line is empty
+      for k in range(10,len(step),10):
+         # added skip if close to zero since getting many 0s on minixyce
+         if abs(step[k+1]-pstep[k+1]) > 0.001:
+              check = 1 
+         # num calls is processed using fraction of total, to keep < 1
+         #if ((step[k+2]-pstep[k+2]) / float(step[k+2]) > 0.1):
+              #check = 1
+
+      if (check == 0):
+	 continue
+
       print step_num,
       for k in range(10,len(step),10):
          #print "{0}:{1} i{2}:{3}".format(k,step[k],k+1,step[k+1]),
@@ -176,6 +203,7 @@ def outputData(totSteps):
       pstep = step
       pstep.extend([0]*10000)
       step_num = step_num + 1
+      progress(step_num + totSteps, total, status='Print output')
       
       
 # print function name mapping
@@ -201,11 +229,13 @@ filename_regexp = sys.argv[2]
 
 i = 0
 listOfFiles = os.listdir('.')  
+total = len(listOfFiles) * 2 + 2
 pattern = filename_regexp
 for entry in listOfFiles:  
     if fnmatch.fnmatch(entry, pattern):
 	gensvm(entry, i)
 	i = i + 1
+        progress(i, total, status='Extract Gproph files')
 	#print (entry)
 numFiles = i
 #print "numFiles=", numFiles
