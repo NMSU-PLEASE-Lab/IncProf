@@ -62,12 +62,15 @@ void (*write_gmon)(void) = NULL;
 void* libiprSigHandler();
 static int debug = 0;
 pthread_t pth;
+struct itimerval itv;
+struct itimerval old_itv;
+
 
 __attribute__((constructor))
 static void libiprInitialize()
 {
-   struct itimerval itv;
-   struct itimerval old_itv;
+//   struct itimerval itv;
+//   struct itimerval old_itv;
    void (*old_sh)(int);
    char *paramstr;
    long int gmonOffset = WRGMON_OFFSET;
@@ -200,44 +203,44 @@ void* libiprSigHandler(void *arg)
    static int dcount = 0;
    char ofname[128];
    char nfname[128];
-//   char cmd[1024];
    struct timespec stime;
    double ftime;
    FILE *lf;
 
    while (1) {
-   if (debug)
-      fprintf(stderr, "libipr: in signal handler\n");
+	   if (debug)
+		fprintf(stderr, "libipr: in signal handler\n");
 
-   sprintf(nfname,"GMON_OUT_PREFIX=gmon-%d",dcount);
-   /* OMAR */
-   putenv(nfname);
+	   sprintf(nfname,"GMON_OUT_PREFIX=gmon-%d",dcount);
+	   /* OMAR */
+	   putenv(nfname);
 
-   // check function pointer to be safe
-   if (write_gmon == NULL)
-       return;
-   write_gmon();
-   strcpy(ofname,"gmon.out");
-  // sprintf(nfname,sampleFilename,dcount);
-   if (debug)
-      fprintf(stderr, "moving (%s) to (%s)\n",ofname,nfname);
+	   // check function pointer to be safe
+	   if (write_gmon == NULL)
+	       return;
+	   write_gmon();
+	   strcpy(ofname,"gmon.out");
+	  // sprintf(nfname,sampleFilename,dcount);
+	   if (debug)
+		   fprintf(stderr, "moving (%s) to (%s)\n",ofname,nfname);
 
-   if (debug) {
-   // record time of sample
-   clock_gettime(CLOCK_THREAD_CPUTIME_ID, &stime);
-   ftime = stime.tv_sec;
-   ftime += ((double)stime.tv_nsec)/1e9;
-   lf = fopen("ipr.log","a");
-   if (lf) {
-      fprintf(lf,"sample %d at %g ( %s )\n",dcount,ftime,ctime(0));
-      fclose(lf);
-   }
-   }
-   dcount++;
-   // redo timer and handler?
-   if (debug)
-      fprintf(stderr, "libipr: done with signal handler\n");
-   usleep(1000000);
+	   if (debug) {
+	   // record time of sample
+	   clock_gettime(CLOCK_THREAD_CPUTIME_ID, &stime);
+	   ftime = stime.tv_sec;
+	   ftime += ((double)stime.tv_nsec)/1e9;
+	   lf = fopen("ipr.log","a");
+	   if (lf) {
+	      fprintf(lf,"sample %d at %g ( %s )\n",dcount,ftime,ctime(0));
+	      fclose(lf);
+	   }
+	   }
+	   dcount++;
+	   // redo timer and handler?
+	   if (debug)
+		fprintf(stderr, "libipr: done with signal handler\n");
+	   int t = (itv.it_interval.tv_sec*1000000 + itv.it_interval.tv_usec);
+	   usleep(t);
    }
 }
 
