@@ -37,7 +37,7 @@
 import re;
 import sys;
 import os;
-import fnmatch;
+import glob;
 import subprocess;
 recordDiff = True
 progFile = "none"
@@ -203,7 +203,6 @@ def outputData(totSteps):
       pstep = step
       pstep.extend([0]*10000)
       step_num = step_num + 1
-      progress(step_num + totSteps, total, status='Print output')
       
       
 # print function name mapping
@@ -229,16 +228,15 @@ filename_regexp = sys.argv[2]
 
 i = 0
 listOfFiles = glob.glob(filename_regexp)
-total = len(listOfFiles) * 2 + 2
+total = len(listOfFiles) + 2
 for entry in listOfFiles:  
    gensvm(entry, i)
    i = i + 1
    progress(i, total, status='Extract Gproph files')
 	#print (entry)
 numFiles = i
-#print "numFiles=", numFiles
-#for i in range(0,numFiles+1):
-#   gensvm(i)
+
 outputData(numFiles)
 outputFuncNames()
+progress(total, total, status='Write the SVM file')
 
