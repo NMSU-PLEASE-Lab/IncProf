@@ -208,9 +208,12 @@ def outputData(totSteps):
 # print function name mapping
 def outputFuncNames():
    outf = open("svmfmap.txt","w")
+   outf.write("{")
    for f in sorted(funcIDMap):
       #print funcIDMap[f], f
-      outf.write("{0}:{1}\n".format(funcIDMap[f],f))
+      #outf.write("{0}:{1}\n".format(funcIDMap[f],f))
+      outf.write('"{0}":{1},'.format(f,funcIDMap[f]))
+   outf.write("}")
    outf.close()
 
 #
@@ -232,11 +235,12 @@ total = len(listOfFiles) + 2
 for entry in listOfFiles:  
    gensvm(entry, i)
    i = i + 1
-   progress(i, total, status='Extract Gproph files')
+   #progress(i, total, status='Extract Gproph files')
 	#print (entry)
+
 numFiles = i
 
 outputData(numFiles)
 outputFuncNames()
-progress(total, total, status='Write the SVM file')
+#progress(total, total, status='Write the SVM file')
 

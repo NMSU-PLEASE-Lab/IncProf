@@ -242,18 +242,21 @@ if idmapFilename != "":
    if debug:
       print idmap
 
+#print "idmap"
+#print idmap
 #
 # Print out characteristics of cluster centroids for bestK and elbowK
 #
 print "K = ",bestk[0],"Centroids"
 n = 1
 for c in centroids[bestk[0]-1]:
-   print "Cluster",n,":"
+   print "Cluster",n-1,":"
    normalize(c)
    for f in range(len(c)):
       if c[f] > 0.00099:
-         if idmap != None and f in idmap:
-            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],idmap[f])
+         m = int(f/10)
+         if idmap != None and m in idmap:
+            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],idmap[m])
          else:
             print "   {0:d}: {1:.3f}".format(f,c[f])
    n += 1
@@ -262,12 +265,13 @@ if bestk[0] == elbowk[0]:
 print "K = ",elbowk[0],"Centroids"
 n = 1
 for c in centroids[elbowk[0]-1]:
-   print "Cluster",n,":"
+   print "Cluster",n-1,":"
    normalize(c)
    for f in range(len(c)):
       if c[f] > 0.00099:
-         if idmap != None and f in idmap:
-            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],idmap[f])
+	 m = int(f/10)
+         if idmap != None and m in idmap:
+            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],idmap[m])
          else:
             print "   {0:d}: {1:.3f}".format(f,c[f])
    n += 1
