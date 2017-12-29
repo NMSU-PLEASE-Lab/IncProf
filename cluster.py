@@ -249,16 +249,28 @@ if idmapFilename != "":
 #
 print "K = ",bestk[0],"Centroids"
 n = 1
-for c in centroids[bestk[0]-1]:
+for c in centroids[bestk[0]-1]: 
    print "Cluster",n-1,":"
    normalize(c)
    for f in range(len(c)):
       if c[f] > 0.00099:
+
+	 # search if the function exist in other clusters
+	 # TODO: find a better way to do it
+         r = 1
+	 ex_list = [] #exist in other cluster list
+	 for c1 in centroids[bestk[0]-1]:
+	    normalize(c1)
+            if r != n and c1[f] > 0.00099:
+	       ex_list.append(r-1) # add the cluster number
+	       #print "ex_list:", ex_list 
+	    r += 1
+
          m = int(f/10)
          if idmap != None and m in idmap:
-            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],idmap[m])
+            print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m],ex_list)
          else:
-            print "   {0:d}: {1:.3f}".format(f,c[f])
+            print "   {0:d}: {1:.3f}  {3}".format(f,c[f],ex_list)
    n += 1
 if bestk[0] == elbowk[0]:
    exit()
@@ -269,10 +281,22 @@ for c in centroids[elbowk[0]-1]:
    normalize(c)
    for f in range(len(c)):
       if c[f] > 0.00099:
+
+         # search if the function exist in other clusters
+         # TODO: find a better way to do it
+         r = 1
+         ex_list = [] #exist in other cluster list
+         for c1 in centroids[elbowk[0]-1]:
+            normalize(c1)
+            if r != n and c1[f] > 0.00099:
+               ex_list.append(r-1) # add the cluster number
+               #print "ex_list:", ex_list
+            r += 1
+
 	 m = int(f/10)
          if idmap != None and m in idmap:
-            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],idmap[m])
+            print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m],ex_list)
          else:
-            print "   {0:d}: {1:.3f}".format(f,c[f])
+            print "   {0:d}: {1:.3f}  {3}".format(f,c[f],ex_list)
    n += 1
 

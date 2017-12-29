@@ -207,12 +207,16 @@ def outputData(totSteps):
       
 # print function name mapping
 def outputFuncNames():
+   i = 1
    outf = open("svmfmap.txt","w")
    outf.write("{")
    for f in sorted(funcIDMap):
       #print funcIDMap[f], f
       #outf.write("{0}:{1}\n".format(funcIDMap[f],f))
-      outf.write('"{0}":{1},'.format(f,funcIDMap[f]))
+      outf.write('"{0}":{1}'.format(f,funcIDMap[f]))
+      if i < len(funcIDMap):
+         outf.write(",")
+      i += 1
    outf.write("}")
    outf.close()
 
