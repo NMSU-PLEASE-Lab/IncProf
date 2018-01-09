@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 #
-# Find the most used functions and creage a new svm file according to some percent
+# Find the most used functions and create a new svm file according to some percent
 # Usage: findmostused.py <svm-format-filename> <percent> > <svm-format-filename>
 
 #
