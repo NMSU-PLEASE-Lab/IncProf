@@ -144,6 +144,8 @@ def findOptKElbow(clParams):
       # ad hoc metric for finding elbow: diff of differences
       # scaled by lower (and probably bigger) one, then times
       # loglog of the # of clusters (1-log seemed too much)
+      if d1 <= 0:
+		continue
       dd = ((d1 - d2) / d1) * math.log(math.log(i+1)+1)
       # try only accepting new if greater than 20% improvement
       if dd > maxd*1.2:

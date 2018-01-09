@@ -194,7 +194,8 @@ def outputData(totSteps):
 	 #print "{0}:{1}-{2}:{3}".format(k+1,step[k+1],k+1,pstep[k+1]),
          # added skip if close to zero since getting many 0s on minixyce
          if abs(step[k+1]-pstep[k+1]) > 0.001:
-             print "{0}:{1}".format(k+1,round(step[k+1]-pstep[k+1],3)),
+             #print "{0}:{1}".format(k+1,round(step[k+1]-pstep[k+1],3)), # Function index and the time diff
+	     print "{0}:1".format(k+1), # Function index only
          # num calls is processed using fraction of total, to keep < 1
          #dc = (step[k+2]-pstep[k+2]) / float(step[k+2])
          #if dc > 0.1:
