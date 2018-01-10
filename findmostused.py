@@ -80,6 +80,13 @@ for m in funcIDlist:
 		highlist.append(i)
 	i += 1
 
+# sort the functionIDs by percentage
+B = sorted(funcIDlist,key=float,reverse=True)
+sortfuncID = []
+for v in B:
+        if v > 0:
+                sortfuncID.append(funcIDlist.index(v))
+		funcIDlist[funcIDlist.index(v)] = 0
 
 f = open("{0}".format(svmFile))
 # generate the new svm file
@@ -95,24 +102,22 @@ for line in f:
 
 	# if no function appeared in the line, then print the fist one
 	if found == 0:
-		print str(line.split(" ")[1].split(":")[0])+":1",
+		# split the line to array of function indeces
+		strs = line.split(" ")
+	        #print (strs)
+	        k = 0
+		tmp = []
+	        for s in strs:
+        	        if s != "\n" and k != 0:
+                	        tmp.append(int(s.split(":")[0]))
+	                k += 1
+		# sort the line array by the sorted function IDs
+		Z = sorted(tmp, key=lambda x: sortfuncID.index(x))
+		# write the most used function in that line
+		print str(Z[0])+":1",
 
 	print ""
 	i += 1
-
-
-# sort the functionIDs by percentage - ignored for now
-B = sorted(funcIDlist,key=float,reverse=True)
-sortfuncID = []
-for v in B:
-	if v > 0:
-		sortfuncID.append(funcIDlist.index(v)) 
-
-#print sortfuncID
-
-
-
-
 
 
 
