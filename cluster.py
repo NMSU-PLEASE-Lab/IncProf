@@ -223,9 +223,12 @@ bestk = findOptimalK(clparms)
 elbowk = findOptKElbow(clparms)
 print "bestK:", bestk, "elbowK:", elbowk
 
+felbowk = open('cluster.elbowk', 'w')
+fbestk = open('cluster.bestk', 'w')
 #
 # Print the clustering of each data element vertically
 #
+print elbowk[0]
 print "V\K:",
 for i in range(1,9):
    print i,
@@ -234,7 +237,21 @@ for j in range(0,len(cld[0])):
    print "{0:3d}:".format(j),
    for i in range(0,8):
       print cld[i][j],
+
+      #
+      # print cluster data in a seprate file
+      #
+
+      # Print the the elbowk cluster elements vertically
+      if i == (elbowk[0] - 1):
+	      felbowk.write("{0},{1}\n".format(j, cld[i][j]))
+      # Print the the bestk cluster elements vertically
+      if i == (bestk[0] - 1):
+	      fbestk.write("{0},{1}\n".format(j, cld[i][j]))
    print
+
+felbowk.close()
+fbestk.close()
 
 #
 # Load Id Map if available

@@ -196,7 +196,7 @@ def outputData(totSteps):
          # added skip if close to zero since getting many 0s on minixyce
 	 c = 0
          if abs(step[k+1]-pstep[k+1]) > 0.001:
-	     c = 1
+#	     c = 1
 #	     if step[k+2] > 0 and (step[k+2]-pstep[k+2]) >  0.01: 
 #		     print "{0}:{1} {2}:{3}".format(k+1,round(step[k+1]-pstep[k+1],3),k+2,round((step[k+2]-pstep[k+2]) / float(step[k+2])/10,4)), # Function index and the time diff and one if function is called
 #	     else:
@@ -207,13 +207,13 @@ def outputData(totSteps):
              #########
 #	     if (step[k+2] == 0 and pstep[k+2] == 0 or step[k+2]-pstep[k+2] == -1):
 #			step[k+2] = 1
-#             print "{0}:{1}:{2}".format(k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]), # Function index and the time diff and count
+             print "{0}:{1}:{2}".format(k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]), # Function index and the time diff and count
 
-	     print "{0}:{1}".format(k+1,round(step[k+1]-pstep[k+1],3)), # Function index and the time diff
+	     #print "{0}:{1}-".format(k+1,round(step[k+1]-pstep[k+1],3)), # Function index and the time diff
 	     #print "{0}:1".format(k+1), # Function index only
          # num calls is processed using fraction of total, to keep < 1
 #         if c == 1 and step[k+2] > 0 and ((step[k+2]-pstep[k+2]) / float(step[k+2])) >  0.01:
-#			print "{0}:{1}".format(k+2,round((step[k+2]-pstep[k+2]) / float(step[k+2])/10,4)),
+#			#print "{0}:{1}".format(k+2,round((step[k+2]-pstep[k+2]) / float(step[k+2])/10,4)),
 #			print "{0}:{1}".format(k+2,step[k+2]-pstep[k+2]),
 #	 else:
 #		if c == 1:
