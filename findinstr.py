@@ -134,20 +134,28 @@ for line in sfile:
 
 	m += 1
 
+# Refine the functions in each cluster to select the most number of hits function
+RefinedFunc = []
+for i in range(0,int(max(clust))+1):
+        RefinedFunc.append([])
+	RefinedFunc[i].append(sorted(functions[i], key=lambda tup: tup[2], reverse=True)[0])
+#	print RefinedFunc[i]
+#	print sorted(functions[i], key=lambda tup: tup[2])
 
-#for i in range(0,int(max(clust))+1):
-#	print "cluster[" + str(i) + "] = ",
-#	print functions[i]
+# If no refinment selected
+#RefinedFunc = functions
+
 print
 print "Clusters\n"
 for i in range(0,int(max(clust))+1):
 	print "###################"
-        print "cluster[" + str(i) + "]"
+        print "Phase ", str(i) 
 	print "###################"
 	print "fID\t\tcalls\t\tcount\t\twhere\t\tother-clusters-exist"
 	print "-----\t\t-----\t\t-----\t\t-----\t\t-----\t\t"
-	for f in sorted(functions[i]):
-		if int(f[2]) < 0:
+	#print sorted(RefinedFunc[i], key=lambda tup: tup[2])
+	for f in sorted(RefinedFunc[i], key=lambda tup: tup[2], reverse=True):
+		if int(f[2]) < 2:
 			continue
 		if f[1] == '0':
 			print "{0}\t\t{1}\t\t{2}\t\tloop".format(f[0], f[1], f[2]),
@@ -158,7 +166,22 @@ for i in range(0,int(max(clust))+1):
 		for cl in range(0,int(max(clust))+1):
 			if i == cl:
 				continue
-			if [m for m, v in enumerate(functions[cl]) if v[0] == f[0]] != []:
+			if [m for m, v in enumerate(RefinedFunc[cl]) if v[0] == f[0]] != []:
 				print cl,",",
 		print "]"
+		break
 	print
+
+print "\n\n--------------------------------\n Function names Per Phase\n--------------------------------\n"
+# Print the function names
+for i in range(0,int(max(clust))+1):
+        print "###################"
+        print "Phase ", str(i)
+        print "###################"
+	for f in sorted(RefinedFunc[i], key=lambda tup: tup[2], reverse=True):
+                if int(f[2]) < 2:
+                        continue
+		if idmap != None and int(f[0]) in idmap:
+			print "{0}: {1}".format(f[0],idmap[int(f[0])])
+		break
+
