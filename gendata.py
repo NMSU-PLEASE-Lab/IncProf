@@ -170,6 +170,7 @@ def gensvm(filename, fileNum):
 def outputData(totSteps):
    pstep = [0]*10000;
    step_num = 0
+   mylist = []
    for i,step in enumerate(stepData):
       #print "step=", step
       if (not step):
@@ -180,13 +181,22 @@ def outputData(totSteps):
       for k in range(10,len(step),10):
          # added skip if close to zero since getting many 0s on minixyce
          if abs(step[k+1]-pstep[k+1]) > 0:#0.001:
+	      mylist = [];
               check = 1 
          # num calls is processed using fraction of total, to keep < 1
          #if ((step[k+2]-pstep[k+2]) / float(step[k+2]) > 0.1):
               #check = 1
-
+      if (check == 0 and not mylist):
+         continue
       if (check == 0):
-	 continue
+         #print "step =", step_num
+         #print "mylist", mylist
+         print step_num,
+         for x in mylist:
+                 print "{0}:{1}:{2}".format(x+1,0,0),
+         print ""
+         step_num = step_num + 1
+         continue
 
       print step_num,
       for k in range(10,len(step),10):
@@ -208,7 +218,7 @@ def outputData(totSteps):
 #	     if (step[k+2] == 0 and pstep[k+2] == 0 or step[k+2]-pstep[k+2] == -1):
 #			step[k+2] = 1
              print "{0}:{1}:{2}".format(k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]), # Function index and the time diff and count
-
+	     mylist.append(k)
 	     #print "{0}:{1}-".format(k+1,round(step[k+1]-pstep[k+1],3)), # Function index and the time diff
 	     #print "{0}:1".format(k+1), # Function index only
          # num calls is processed using fraction of total, to keep < 1
