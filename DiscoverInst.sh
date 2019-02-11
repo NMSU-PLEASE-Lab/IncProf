@@ -61,7 +61,7 @@ echo "### Cluster the small gmon"
 python ${IncProf_PATH}/cluster.py gmon.small.svm svmfmap.txt flip > cluster.small.out
 # print the best instrumentation points for bestk
 #echo "### Find inst points for full gmon cluster (bestk)"
-#python /home/oaaziz/Source/IncProf/findinstr.py cluster.bestk gmon.count.svm svmfmap.txt > result.bestk
+#python ${IncProf_PATH}/findinstr.py cluster.bestk gmon.count.svm svmfmap.txt > result.bestk
 # print the best instrumentation points for elbowk
 echo "### find inst points for small gmon cluster (elbowk)"
 python ${IncProf_PATH}/findinstr.py cluster.elbowk gmon.count.svm svmfmap.txt > result.small.elbowk
