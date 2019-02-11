@@ -265,12 +265,17 @@ filename_regexp = sys.argv[2]
 
 i = 0
 listOfFiles = glob.glob(filename_regexp)
-total = len(listOfFiles) + 2
-for entry in listOfFiles:  
-   gensvm(entry, i)
+total = len(listOfFiles)
+proc_num = listOfFiles[total-1].split(".")[1]
+pref_filename = listOfFiles[total-1].split("-")[0]
+#exit(0)
+for entry in listOfFiles:
+   fname = pref_filename+"-"+str(i)+"."+str(proc_num)
+   #print (fname)
+   gensvm(fname, i)
    i = i + 1
-   #progress(i, total, status='Extract Gproph files')
-	#print (entry)
+   #progress(i, total+2, status='Extract Gproph files')
+        #print (entry)
 
 numFiles = i
 
