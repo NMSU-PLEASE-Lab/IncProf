@@ -94,6 +94,7 @@ python findinstr.py cluster.elbowk gmon.count.svm svmfmap.txt > result.elbowk
 
 ### Sample steps 7-11 all-in-one script
 ```
+export LD_PRELOAD=""
 ./DiscoverInst.sh ./testpr
 ```
 
