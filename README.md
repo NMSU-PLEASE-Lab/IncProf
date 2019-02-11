@@ -30,8 +30,19 @@ generates. To use all of the capabilities, follow these steps
    files are and find the highest numbered "gmon-##.out" file. Redirect the 
    stdout output to a file for step 8
 8. Use "cluster.py" to run clustering on the output file from step 7. This 
-   script needs the Python sklearn package installed
+   script needs the Python sklearn package installed. This script will create
+   two csv files (bestk cluster and elbow cluster)
+9. Use "gendata.py" to process the new sampled profile files and create a 
+   timestamp with functions time difference and functions call count
+10. Use "findmostused.py" to process the data file and get the most used 
+    functions with or without recording the function call count. This 
+    function take 0 or 1 flag as input; 0 time difference only / 1 time and count 
+11. Use "findinstr.py" to process either the bestk cluster or elbow cluster. This 
+    script finds the best instrumention points in the application
 
+
+# Indivitual steps:
+# ----------------
 
 ### Sample Run Script for steps 3-6:
 ```
@@ -42,25 +53,47 @@ generates. To use all of the capabilities, follow these steps
  # IPR_GMONOFFSET -- offset (hex or dec) from "moncontrol" symbol to write_gmon begin
  #export IPR_GMONOFFSET=-1360
  # Home NUC
- export IPR_GMONOFFSET=-1328
+ #export IPR_GMONOFFSET=-1328
+ export IPR_GMONOFFSET=-1264
 
  # IPR_SECONDS -- seconds between profile sample writes (added to useconds)
  # IPR_USECONDS -- microseconds between profile sample writes (added to seconds)
- export IPR_SECONDS=0
- export IPR_USECONDS=250000
+ export IPR_SECONDS=1
+ #export IPR_USECONDS=250000
+
+ # IPR_APPNAME -- the application name ( the executable name )
+ export IPR_APPNAME='testpr'
 
  # IPR_DEBUG -- 1 if want debug messages
  export IPR_DEBUG=1
 
- rm -f gmon-*.out gprof-*.out gdata/g*.out ipr-err.out ipr.log
+ rm -f gmon* gprof-*.out gdata/g*.out ipr-err.out ipr.log cluster.*out* elb_distance.csv svmfmap.txt result.* gmon.* cluster.bestk cluster.elbowk
  export LD_PRELOAD=./libipr.so
- ./testpr 30 2> ipr-err.out
+ ./testpr 230 2> ipr-err.out
  #---------end-sample-run-script---------
 ```
 
 ### Sample setps 7,8
 ```
-./gensvm.py ./testpr 13 > ipr-13.svm
-./cluster.py ipr-13.svm
+export LD_PRELOAD=""
+proc_num=$(ls gmon-* | head -n 1 | cut -d "." -f2)
+python gensvm.py ./testpr "gmon-*.${proc_num}" > gmon.svm
+python cluster.py gmon.svm svmfmap.txt flip > cluster.out
+```
+
+### Sample steps 9-11
+```
+python gendata.py ./testpr "gmon-*.${proc_num}" > gmon.data
+python findmostused.py gmon.data 1 > gmon.count.svm
+python findinstr.py cluster.elbowk gmon.count.svm svmfmap.txt > result.elbowk
+```
+
+
+# All-in-one script:
+# -----------------
+
+### Sample steps 7-11 all-in-one script
+```
+./DiscoverInst.sh ./testpr
 ```
 

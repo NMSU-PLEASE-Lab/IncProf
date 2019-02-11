@@ -2,8 +2,8 @@
 
 #
 # Find the most used functions and create a new svm file according to some percent
-# Usage: findmostused.py <svm-format-filename> <0/1/2>  > <svm-format-filename>
-# 0 time only / 1 count only / 2 both
+# Usage: findmostused.py <svm-format-filename> <0/1>  > <svm-format-filename>
+# 0 time only / 1 both time and count
 
 
 #
