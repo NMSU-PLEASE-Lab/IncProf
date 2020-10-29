@@ -1,6 +1,7 @@
 # IncProf
 Incremental profiling based on gprof, with analysis tools
 
+This version of IncProf is an improvement on the the version that has been developed by Omar Azziz. This vesion foloows the algorithms of IncProf (Sample Set Reduction and Iterative Evaluation Algorithm).
 
 ### How to Use Libipr
 
@@ -25,20 +26,17 @@ generates. To use all of the capabilities, follow these steps
 4. Set up other IPR environment variables as you wish, or not (use defaults)
 5. Set the environment variable LD_PRELOAD to point to your libipr.so file
 6. Run your application
-7. Use "gensvm.py" to postprocess the sampled profile files; it currently needs
-   you to supply the regular expression for the list of file names you want to process, 
+7.Use "sampleSetReduction.py" post-process the sampled profile files; it currently needs
+   you to supply the regular expression for the list of filenames you want to process, 
    so do an "ls" of where your sample files and make your expression. Redirect the 
-   stdout output to a file for step 8
-8. Use "cluster.py" to run clustering on the output file from step 7. This 
-   script needs the Python sklearn package installed. This script will create
-   two csv files (bestk cluster and elbow cluster)
-9. Use "gendata.py" similarly to "gensvm.py" in step 7, this script will
-   find the functions call count
-10. Use "findmostused.py" to process the data file and get the most used 
-    functions with or without recording the function call count. This 
-    function take 0 or 1 flag as input; 0 time difference only / 1 time and count 
-11. Use "findinstr.py" to process either the bestk cluster or elbow cluster. This 
-    script finds the best instrumention points in the application
+   stdout output to a file (gmon.data) which contains functions call count for all
+   functions and produce a rank file that will be used in steps 8 and 9.
+8. Use "gensvm.py" to post-process the sampled profile files; it currently needs
+   you to supply the regular expression for the list of filenames you want to process, 
+   so do an "ls" of where your sample files and make your expression. Redirect the 
+   stdout output to a file for step 8 
+9. Use "algorithm2.py" to find phases and instrumentation points. 
+
 
 
 # Indivitual steps:
@@ -67,7 +65,7 @@ generates. To use all of the capabilities, follow these steps
  # IPR_DEBUG -- 1 if want debug messages
  export IPR_DEBUG=1
 
- rm -f gmon* gprof-*.out gdata/g*.out ipr-err.out ipr.log cluster.*out* elb_distance.csv svmfmap.txt result.* gmon.* cluster.bestk cluster.elbowk
+ rm -f gmon.* *.dat ipr-err.out ipr.log svmfmap.txt svmfmap.txt
  export LD_PRELOAD=./libipr.so
  ./testpr 230 2> ipr-err.out
  #---------end-sample-run-script---------
@@ -77,19 +75,18 @@ generates. To use all of the capabilities, follow these steps
 ```
 export LD_PRELOAD=""
 proc_num=$(ls gmon-* | head -n 1 | cut -d "." -f2)
-
-# Generate the SVM file which is used as an input for Kmeans clustering
-
-echo "### Generate SVM file"
-python ${IncProf_PATH}/gensvm.py $1 "$gmon_regexp" > gmon.svm
 # Generate data file with functions time difference and function
 # call count and rank file for each function
 echo "### Generate Data file and rank file"
 python ${IncProf_PATH}/sampleSetReduction.py $1 "$gmon_regexp" > gmon.data
+# Generate the SVM file which is used as an input for Kmeans clustering
+echo "### Generate SVM file"
+python ${IncProf_PATH}/gensvm.py $1 "$gmon_regexp" rank.svm > gmon.svm
 
 # print the best instrumentation points for elbowk
-echo "### find inst points for small gmon cluster (elbowk)"
-python ${IncProf_PATH}/algorithm2.py gmon.data svmfmap.txt rank.svm gmon.svm > instPoints.out
+echo "### find phases and inst points using elbow or silhouette methods($3)"
+python ${IncProf_PATH}/algorithm2.py gmon.data svmfmap.txt rank.svm gmon.svm $2 $3> instPoints.out
+
 
 ```
 
@@ -100,6 +97,6 @@ python ${IncProf_PATH}/algorithm2.py gmon.data svmfmap.txt rank.svm gmon.svm > i
 ### Sample steps 7-11 all-in-one script
 ```
 export LD_PRELOAD=""
-./DiscoverInst.sh ./testpr
+./RunAllScripts.sh ./testpr elbow
 ```
 
