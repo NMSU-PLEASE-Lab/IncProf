@@ -1,7 +1,7 @@
 # IncProf
 Incremental profiling based on gprof, with analysis tools
 
-This version of IncProf is an improvement on the the version that has been developed by Omar Azziz. This vesion foloows the algorithms of IncProf (Sample Set Reduction and Iterative Evaluation Algorithm).
+This version of IncProf is an improvement in the version that has been developed by Omar Azziz. This version follows the algorithms of IncProf (Sample Set Reduction and Iterative Evaluation Algorithm)
 
 ### How to Use Libipr
 
