@@ -32,7 +32,7 @@ import csv
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
-#import pandas as pd
+
 # Show progress
 def progress(count, total, status=''):
     bar_len = 60
@@ -75,6 +75,7 @@ def findRank(rfile):
 	 rank[int(strs[0])+1] = int(strs[1].rstrip())
       j+=1
    return(rank)  
+
 # Find the optimal k of KMeans using elbow method 
 def findOptKElbow(clParams):
    maxd = 0
@@ -98,7 +99,10 @@ def findOptKElbow(clParams):
          amaxd = dd
          amaxk = i+1
    return (maxk, round(maxd,3), amaxk, round(amaxd,3))
+
 # Find optimal k using silhouette coefficient
+# Check the silhiuette average for each k and return the one
+# with max silhouette value
 def findOptKSillho(sillhouet):
    k = 0
    for i, sill in enumerate(sillhouet):
@@ -106,6 +110,7 @@ def findOptKSillho(sillhouet):
 	 k = i+2
    return(k)
 
+# Run KMeans algorithm over the data set to find the clusters
 def runKmenas(X, cluster_range):
    centroids = []
    cld = []
@@ -117,7 +122,7 @@ def runKmenas(X, cluster_range):
    silhout = []
    labelss = []
    #
-   # Run clustering for K=1 to K=8, save results 
+   # Run clustering for K=1 to K=9, save results 
    #
    #k = range(2,9)
    for i in cluster_range:
@@ -157,6 +162,7 @@ def runKmenas(X, cluster_range):
 	 basedist =interia
       cld.append(labels)
       clparms.append(interia/basedist)
+
    return(cld,clustdist,clparms,interias,distortions,silhout,centroids,labelss)
 
 #find clusters using KMeans
@@ -226,6 +232,8 @@ def findIntervals(datafile,rank,distances,clust):
    return(C,C1,interv)
    
 
+# Find the instrumentation sites for each cluster(phase),
+# body or loop
 def findInstPoint(C,clust):
    P = []
    C2 = []
@@ -254,16 +262,22 @@ def findInstPoint(C,clust):
       allintervals +=len(C[k])
    coverage = []
    phaseCov = []
+   cove = []
+   phaseC = []
+   allc = 0
    for i in range(0,int(max(clust))+1):
-      j = 0
+      x = 0
+      j = 1
+      allc += len(C[i])
       #Sort intervals in Ci by distance to the centroid
       C[i].sort(key=lambda f: f[-1], reverse = False)
       for inter in C[i]:
 	  
 	  covered = 0
 	  tmp3 = []
-	  #checks to see if this interval is already covered
-
+	  preCovered = 0
+	  
+	  #checks to see if this interval is already covere
 	  for f in inter[:-1]:
 	     for fun in P[i]:
 		if f[0] in fun:
@@ -272,72 +286,26 @@ def findInstPoint(C,clust):
 	  #skip the interval if it's covered
 	  if covered == 1:
 	     count +=1
-	  if (covered == 0 and  x != 0):
-	     if inter == C[i][0]:
-		if inter != C[-1][-1]:
-		   #print "a1"
-		   #print len(C[i-1])
-		  
-		   #print count
-		   coverage.append(round(float(float(count)/float(allintervals)),3))
-		   phaseCov.append(round(float(float(count)/float(len(C[i-1]))),3))
-	     else:
-		#print "a2"
-		#print len(C[i])
-		#print count
-		coverage.append(round(float(float(count)/float(allintervals)),3))
-		phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
+	  #get the phase coverage and overall coverage of each intrumentation point
+	  if (inter == C[i][-1] and covered == 1 and j == len(C[i])):
+	     phaseCover = round(float(float(count)/float(allintervals)),3)
+	     allCov = round(float(float(count)/float(len(C[i]))),3)
+	     cove.append(allCov)
+	     phaseC.append(phaseCover)
 
-	  #if inter == C[-1][-1]:
-	     #print C[-1][-1]
-	     #print len(C[i])
-	     #print count
-	     #coverage.append(round(float(float(count)/float(allintervals)),3))
-	     #phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
-	    # if inter == C[i][-1]:
-		#print len(C[i])
-		#print allintervals
-		#print count
-		#coverage.append(round(float(float(count)/float(allintervals)),3))
-		#phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
-	     #else:
-		#print len(C[i-1])
-		#print count
-		#coverage.append(round(float(float(count)/float(allintervals)),3))
-		#phaseCov.append(round(float(float(count)/float(len(C[i-1]))),3))
-             #print count
-             #print len(C[i])
-	  #else:
-	     #if inter == C[i][-1] or inter == C[-1][-1]:
-		#print "hi"
-		#print len(C[i])
-		#print count
-		#print len(C[i])
-		#coverage.append(round(float(float(count)/float(allintervals)),3))
-		#phaseCov.append(round(float(float(count)/float(len(C[i]))),3))"""
- 
-	  #if covered == 0 and inter == C[-1][-1] and j == len(C[i])-1:
-	     #print inter
-	     #print C[-1][-1]
-	     #print "a5"
-	     #print len(C[i])
-	     #print count
-	     #coverage.append(round(float(float(count)/float(allintervals)),3))
-	     #phaseCov.append(round(float(float(count)/float(len(C[i-1]))),3))
-	  if covered == 1 and inter == C[-1][-1] and j == len(C[i])-1:
-	     
-	     #print "a3"
-	     #print len(C[i])
-	     #print count
-	     coverage.append(round(float(float(count)/float(allintervals)),3))
-	     phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
+	  if (x != 0 and covered == 0 ):
+	     phaseCover = round(float(float(count)/float(allintervals)),3)
+	     allCov = round(float(float(count)/float(len(C[i]))),3)
+	     cove.append(allCov)
+	     phaseC.append(phaseCover)
 
 	  if covered == 1:
 	     j+=1
 	     continue
 
+	  #get the required data from intervals
 	  for f in inter[:-1]:
-	     tmp3.append((f[0],f[1],f[3]))
+	     tmp3.append((f[0],f[1],f[2]))
 	     #sorts the functions first by the number of calls (ascending) and then by rank (descending)
 	  #tmp3.sort(key=lambda x:(-x[2],x[1]),reverse=False)
 	  #sort based on number of calls and then rank
@@ -345,29 +313,65 @@ def findInstPoint(C,clust):
 	  #takes the topmost function from this sort as the function to instrument in order to cover this interval
 	  f = tmp3[0]
 	  p = []
-	  
+	  #if number of calls of a function is 0, instrumentation is in a loop and body otgerwise
 	  if f[1] == 0:
 	     p = [f[0], "loop"]
 	  else:
 	     p = [f[0], "body"]
 	  if p not in P[i]:
-	     #print "fu"
-	     #print f[0]
+	     fun1 = f[0]
 	     count = 1
 	     x = f[0]
 	     P[i].append(p)
 
-	  if covered == 0 and inter == C[-1][-1]:
-	    # print "a4"
-	     #print len(C[i])
-	     #print count
+
+
+	  if covered == 0 and j == len(C[i]) and j != 1:
+	     
 	     coverage.append(round(float(float(count)/float(allintervals)),3))
+	     phaseC.append(round(float(float(count)/float(allintervals)),3))
 	     phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
+
+	     cove.append(round(float(float(count)/float(len(C[i]))),3))
+
+	  if covered == 0  and (j == len(C[i]) and j == 1):
+	     coverage.append(round(float(float(count)/float(allintervals)),3))
+	     phaseC.append(round(float(float(count)/float(allintervals)),3)) 
+	     phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
+	     cove.append(round(float(float(count)/float(len(C[i]))),3))
 	  j+=1
 
-   #print phaseCov
+   return(P,C,coverage,phaseCov,cove,phaseC)
 
-   return(P,C2,coverage,phaseCov)
+# This finction to find the coverage of each instrumentation point
+# It may be used later
+def findCoverage(functions,clusters):
+   coverage = []
+   i = 0
+   allintervals = reduce(lambda count, l: count + len(l), clusters, 0)
+   for i, function in enumerate(functions):
+      coverage.append([])
+   for i, function in enumerate(functions):
+      
+      for func in function:
+	 count = 0.0
+	 phaseCount = 0.0
+	 for interval in clusters[i]:
+	    #print interval
+	    for inter in interval[:-1]:
+	       #print inter
+	       if func[0] == inter[0]:
+ 		  count +=1
+         cover = count/len(clusters[i])
+	 funCover = [func[0],cover]
+	 coverage[i].append(funCover)
+   
+   return(coverage)
+
+
+
+# Find if there is overlapping between phases
+# If a function appears in two different phases as an instrumentation point
 def isOverlapped(funct,clust):
    overlapped = False
 
@@ -382,7 +386,7 @@ def isOverlapped(funct,clust):
 
 
 
-
+# Print phases with their instrumentation points(functions)
 def printClusters(functions3,clust,coverage,phaseCov):
    threshold = 0.95
    covSum = 0
@@ -536,12 +540,14 @@ C,C2,intervalss = findIntervals(datafile,rank,distances,clust)
 P1 = findInstPoint(C,clust)
 P = P1[0]
 J = P1[1]
-Cov = P1[2]
-phCov = P1[3]
+Cov = P1[5]
+phCov = P1[4]
+phaseC = P1[4]
+cove = P1[5]
 overlapped = isOverlapped(P,clust)
 #print overlapped
 #print optK
-
+#cov = findCoverage(P,C)
 pathToOptK = []
 pathToOptK.append(optK)
 while(overlapped and optK>2):
@@ -556,8 +562,8 @@ while(overlapped and optK>2):
    P1 = findInstPoint(C,clust)
    P = P1[0]
    J = P1[1]
-   Cov = P1[2]
-   phCov = P1[3]
+   Cov = P1[5]
+   phCov = P1[4]
    overlapped = isOverlapped(P,clust)
    print overlapped
 print "K\tsilhouette"
@@ -571,6 +577,7 @@ plt.scatter(optcentroids[:,0],optcentroids[:,1],marker = "x",s=50,linewidths = 5
 plt.show()"""
 
 printClusters(P,clust,Cov,phCov)
+cov = findCoverage(P,C)
 
 labelfile =  open("label.dat", "w")
 for i in optlabel:
