@@ -3,7 +3,7 @@
 # Usage: script <exec-file> <regexp>
 
 # Please change to your path
-IncProf_PATH="/data/phases_work/IncProfLastVer"
+IncProf_PATH="/data/phases_work//IncProf/MohammedVersion/"
 if [ "$#" -lt 1 ]
 then
     echo "Illegal number of parameters!!!"
@@ -14,7 +14,8 @@ rm *.dat
 rm gmon.*
 rm svmfmap.txt
 rm instPoints.out
-id=$(ls gmon-0.* | cut -d "." -f2 | sort | sed -n '2p')
+id=$(ls gmon-0.* | cut -d "." -f2 | sort | head -n 1)
+# sed -n '2p')
 gmon_regexp="gmon-*.$id"
 
 # If the regexp was given by the user

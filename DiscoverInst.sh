@@ -3,7 +3,7 @@
 # Usage: DiscoverInst <exec-file> <regexp>
 
 # Please change to your path
-IncProf_PATH="/home/oaaziz/Source/IncProf"
+IncProf_PATH="/data/phases_work/IncProf"
 
 if [ $# -lt 1 ]
 then

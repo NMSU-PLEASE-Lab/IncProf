@@ -11,7 +11,7 @@ testpr: testpr.c
 	gcc -pg testpr.c -o testpr
 
 clean: 
-	rm -rf *.o libipr.so *.gcda *out
+	rm -rf *.o libipr.so *.gcda *out testpr
 
 #
 # Other stuff below here is just experimentation with gcov

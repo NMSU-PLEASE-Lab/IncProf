@@ -305,7 +305,7 @@ def findInstPoint(C,clust):
 
 	  #get the required data from intervals
 	  for f in inter[:-1]:
-	     tmp3.append((f[0],f[1],f[2]))
+	     tmp3.append((f[0],f[1],f[3]))
 	     #sorts the functions first by the number of calls (ascending) and then by rank (descending)
 	  #tmp3.sort(key=lambda x:(-x[2],x[1]),reverse=False)
 	  #sort based on number of calls and then rank
@@ -412,36 +412,59 @@ def printClusters(functions3,clust,coverage,phaseCov):
    print "Clusters\n"
    k = 0
    for i in range(0,int(max(clust))+1):
-      covSum = 0
+      #covSum = phaseCov[k]
       print "###################"
       print "Phase ", str(i) 
       print "###################"
       print "fID\t\twhere\t\tcoverage\tPhase coverage\texisted in other clusres"
       print "-----\t\t-----\t\t-----\t\t------\t\t------"
-      for f in sortedFunc[i]:
-	 existed = 0
-	 for cl in range(0,int(max(clust))+1):
-	    if i == cl:
-	       continue
-	    if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
+      covSum = 0
 
-	       existed = 1
-	 #if existed == 1:
-	    #continue
-         covSum += phaseCov[k]
-	 if covSum < threshold or f[2] == 1.0 or f[2]>threshold:
+      for f in sortedFunc[i]:
+	 if f == sortedFunc[i][0]:
+	    existed = 0
+	    for cl in range(0,int(max(clust))+1):
+	       if i == cl:
+		  continue
+	       if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
+		  existed = 1
+		  #if existed == 1:
+		  #continue
+		  #covSum = phaseCov[k]
+		  #if covSum < threshold or f[2] == 1.0 or f[2]>threshold:
+		  #covSum += phaseCov[k]
 	    instPoints[i].append([f[0]])
 	    print "{0}\t\t{1}\t\t{2}\t\t{3}\t\t".format(int(int(f[0])), f[1],f[3],f[2]),
 	    k +=1
+	    #covSum += phaseCov[k]
 	    print "[",
 	    for cl in range(0,int(max(clust))+1):
 	       if i == cl:
 		  continue
 	       if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
-	          print cl,",",
+		  print cl,",",
 	    print "]"
+	    covSum += f[2]
+	 elif covSum < threshold:
+	    existed = 0
+	    for cl in range(0,int(max(clust))+1):
+	       if i == cl:
+		  continue
+	       if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
+		  existed = 1
+	    instPoints[i].append([f[0]])
+	    print "{0}\t\t{1}\t\t{2}\t\t{3}\t\t".format(int(int(f[0])), f[1],f[3],f[2]),
+	    print "[",
+	    for cl in range(0,int(max(clust))+1):
+	       if i == cl:
+		  continue
+	       if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
+		  print cl,",",
+	    print "]"
+	    covSum += f[2]
 	 else:
 	    skippedFunc[i].append(f)
+	    covSum += f[2]
 	 
       print
    print "\n\n--------------------------------\n Function names Per Phase\n--------------------------------\n"
