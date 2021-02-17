@@ -34,6 +34,7 @@
 // allow filename for samples to be configured with directory path
 // - through environment variable
 char sampleFilename[120] = "gmon-%d.out";
+char dataDirname[120] = "";
 
 //
 // Function pointer for write_gmon hidden C library function
@@ -75,29 +76,29 @@ static void libiprInitialize()
    char *paramstr;
    long int gmonOffset = WRGMON_OFFSET;
    int err;
-   char exe[1024];
-   int ret;
+   char exeName[1024];
+   int len;
 
    //printf("libipr: start... \n");
    paramstr = getenv("IPR_APPNAME");
    if (!paramstr) {
-	fprintf(stderr, "libipr: IPR_APPNAME missing\n");
-	return;
+      fprintf(stderr, "libipr: IPR_APPNAME missing\n");
+      return;
    }
 
    /* Get the excutable name and check it with the Enviroment variable */
-   ret = readlink("/proc/self/exe",exe,sizeof(exe)-1);
-   if(ret ==-1) {
-       fprintf(stderr,"libipr: ERROR can't get the executabel name \n");
-       exit(1);
+   len = readlink("/proc/self/exe",exeName,sizeof(exeName)-1);
+   if(len == -1) {
+       fprintf(stderr,"libipr: ERROR cannot get the executable name \n");
+       return;
    }
-   exe[ret] = 0;
+   exeName[len] = 0;
 
-   //fprintf(stderr, "libipr: IPR_APPNAME = %s and path = %s\n", paramstr, exe);
+   //fprintf(stderr, "libipr: IPR_APPNAME = %s and path = %s\n", paramstr, exeName);
    /* if the excutable name is not similar to IPR_APPNAME then return */
-   if (strcmp(basename(exe), paramstr) != 0) {
-	fprintf(stderr, "libipr: wrong exec file, path is %s \n", exe);
-	return;
+   if (strcmp(basename(exeName), paramstr) != 0) {
+      fprintf(stderr, "libipr: wrong exec file, path is %s \n", exeName);
+      return;
    }
 
   
@@ -118,9 +119,12 @@ static void libiprInitialize()
    paramstr = getenv("IPR_DATADIR");
    if (paramstr) {
       if (strlen(paramstr) < sizeof(sampleFilename) - 15) {
+         strcpy(dataDirname,paramstr);
          strcpy(sampleFilename,paramstr);
-         if (sampleFilename[strlen(sampleFilename)-1] != '/')
+         if (sampleFilename[strlen(sampleFilename)-1] != '/') {
             strcat(sampleFilename,"/");
+            strcat(dataDirname,"/");
+         }
          strcat(sampleFilename,"gmon-%d.out");
       }
    }
@@ -177,8 +181,9 @@ static void libiprInitialize()
 
    err = pthread_create(&pth, NULL, &libiprSigHandler, NULL);
    if (err != 0)
-	fprintf(stderr, "libipr: can't create thread :[%s]", strerror(err));
+   fprintf(stderr, "libipr: can't create thread :[%s]", strerror(err));
 
+   // NOW USING threads -- must refactor code in signal handler to say this!
    // man page: use sigaction instead?
    /*old_sh = signal(SIGVTALRM, libiprSigHandler);
    if (old_sh != SIG_IGN && old_sh != SIG_DFL) {
@@ -200,7 +205,7 @@ static void libiprFinalize()
 
 void* libiprSigHandler(void *arg)
 {
-   static int dcount = 0;
+   static int sampleCount = 0;
    char ofname[128];
    char nfname[128];
    struct timespec stime;
@@ -208,40 +213,47 @@ void* libiprSigHandler(void *arg)
    FILE *lf;
 
    while (1) {
-	   if (debug)
-		fprintf(stderr, "libipr: in signal handler\n");
+      // JEC: sleep first, then sample
+      int t = (itv.it_interval.tv_sec*1000000 + itv.it_interval.tv_usec);
+      usleep(t);
 
-	   sprintf(nfname,"GMON_OUT_PREFIX=gmon-%d",dcount);
-	   /* OMAR */
-	   putenv(nfname);
+      if (debug)
+         fprintf(stderr, "libipr: in signal handler\n");
 
-	   // check function pointer to be safe
-	   if (write_gmon == NULL)
-	       return;
-	   write_gmon();
-	   strcpy(ofname,"gmon.out");
-	  // sprintf(nfname,sampleFilename,dcount);
-	   if (debug)
-		   fprintf(stderr, "moving (%s) to (%s)\n",ofname,nfname);
+      sprintf(nfname,"GMON_OUT_PREFIX=%sgmon-%d",dataDirname,sampleCount);
+      /* OMAR */
+      putenv(nfname);
 
-	   if (debug) {
-	   // record time of sample
-	   clock_gettime(CLOCK_THREAD_CPUTIME_ID, &stime);
-	   ftime = stime.tv_sec;
-	   ftime += ((double)stime.tv_nsec)/1e9;
-	   lf = fopen("ipr.log","a");
-	   if (lf) {
-	      fprintf(lf,"sample %d at %g ( %s )\n",dcount,ftime,ctime(0));
-	      fclose(lf);
-	   }
-	   }
-	   dcount++;
-	   // redo timer and handler?
-	   if (debug)
-		fprintf(stderr, "libipr: done with signal handler\n");
-	   int t = (itv.it_interval.tv_sec*1000000 + itv.it_interval.tv_usec);
-	   usleep(t);
+      // check function pointer to be safe
+      if (write_gmon == NULL)
+          return 0;
+      write_gmon();
+      strcpy(ofname,"gmon.out");
+     // sprintf(nfname,sampleFilename,sampleCount);
+      if (debug)
+         fprintf(stderr, "moving (%s) to (%s)\n",ofname,nfname);
+
+      if (debug) {
+         // record time of sample -- doesn't work in new thread!
+         //clock_gettime(CLOCK_THREAD_CPUTIME_ID, &stime);
+         clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &stime);
+         ftime = stime.tv_sec;
+         ftime += ((double)stime.tv_nsec)/1e9;
+         lf = fopen("ipr.log","a");
+         if (lf) {
+            fprintf(lf,"sample %d at %g ( %s )\n",sampleCount,ftime,ctime(0));
+            fclose(lf);
+         }
+      }
+      sampleCount++;
+      // redo timer and handler?
+      if (debug)
+      fprintf(stderr, "libipr: done with signal handler\n");
+      // JEC: moved sleep to top
+      //int t = (itv.it_interval.tv_sec*1000000 + itv.it_interval.tv_usec);
+      //usleep(t);
    }
+   return 0;
 }
 
 
