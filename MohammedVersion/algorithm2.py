@@ -4,7 +4,7 @@
 
 #
 # Find the instrumantation points
-# Usage: algorithm2.py <data-file> <svmfmap> <rank-file> <svm-file>
+# Usage: algorithm2.py <data-file> <svmfmap> <rank-file> <svm-file> <executable> <gmon-regex>
 
 #
 # This script will use the cluster information to prduce a list of function that is 
@@ -29,7 +29,7 @@ from sklearn.preprocessing import scale
 import numpy as np
 from sklearn.metrics import silhouette_score
 import csv
-import pandas as pd
+#import pandas as pd  # not used right now
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 
@@ -490,7 +490,7 @@ def printClusters(functions3,clust,coverage,phaseCov):
 # Main program
 #
 if len(sys.argv) != 6:
-   print "Usage: {0} <svm-file> <svmfmap> <rank-file> <svmfile>".format(sys.argv[0])
+   print "Usage: {0} <svm-file> <svmfmap> <rank-file> <svmfile> <executable> <gmon-regex>".format(sys.argv[0])
    exit(1)
    
 datafile = open(sys.argv[1])
@@ -506,8 +506,8 @@ if idmapFilename != "":
 #Load datasets in the svmlight / libsvm format into sparse CSR matrix
 X, y = sklearn.datasets.load_svmlight_file(ssfile)
 transformer = MaxAbsScaler().fit(X)
-df = pd.read_csv("data.csv")
-df3 = df.iloc[:,1:]
+# no pandas df = pd.read_csv("data.csv")
+# no pandas df3 = df.iloc[:,1:]
 scaled = transformer.transform(X).toarray()
 #print scaled
 #print "X="
