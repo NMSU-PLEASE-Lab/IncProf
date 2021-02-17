@@ -77,7 +77,7 @@ clust = []
 #
 # Load the cluster
 for line in cfile:
-	# split the line to array of function indeces
+	# split the line to array of function indices
         strs = line.split(",")
 	clust.append(strs[1].rstrip())
 
@@ -98,7 +98,7 @@ for i in range(0,int(max(clust))+1):
 m = 0
 for line in sfile:
 
-        # split the line to array of function indeces
+        # split the line to array of function indices
         strs = line.split(" ")
 	k = 0
         tmp = []

@@ -245,7 +245,7 @@ def outputFuncNames():
       #outf.write("{0}:{1}\n".format(funcIDMap[f],f))
       outf.write('"{0}":{1}'.format(f,funcIDMap[f]))
       if i < len(funcIDMap):
-         outf.write(",")
+         outf.write(",\n")
       i += 1
    outf.write("}")
    outf.close()
