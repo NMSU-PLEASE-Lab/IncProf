@@ -67,14 +67,14 @@ def progress(count, total, status=''):
 def gensvm(filename, fileNum):
    global nextFunctionID
    global numFiles
-#   try:
-	#print "1"
+   #try:
+   #   print "1"
    if not(os.path.isfile(filename+".new")):
-	os.system("gprof -b {0} {1} > {1}.new".format(progFile,filename))
-	#print "2"
- #  except OSError:
-#	print "3"
-   #return
+      os.system("gprof -b {0} {1} > {1}.new".format(progFile,filename))
+   #   print "2"
+   #except OSError:
+   #   print "3"
+   #   return
    #print "{0}.new".format(filename)
    inf = open("{0}.new".format(filename))
    inTable = False
@@ -107,40 +107,40 @@ def gensvm(filename, fileNum):
          # change function match from \w to non-newline because 
          # of C++ class/template names (:,<>,spaces,...)
          v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
-	 #print "line = ", line
-	 #print "v = ", v
-	 # short is 1 if the line have missing last 3 values
-	 short = 0
-	 if v == None:
-		v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
-		short = 1
+         #print "line = ", line
+         #print "v = ", v
+         # short is 1 if the line have missing last 3 values
+         short = 0
+         if v == None:
+            v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
+            short = 1
 
-	 if v != None:
+         if v != None:
             #print v.group(1), v.group(2), v.group(3), v.group(4) 
-	    #print v.group(5), v.group(6), v.group(7)
-	    fpct = float(v.group(1))
+            #print v.group(5), v.group(6), v.group(7)
+            fpct = float(v.group(1))
             fttime = float(v.group(2))
-      	    fstime = float(v.group(3))
-	    if short == 0:
-		fcalls = int(v.group(4))
-		# 5 and 6 are self ms/call and tot ms/call
-	        if not (v.group(7) in funcIDMap):
-    			funcIDMap[v.group(7)] = nextFunctionID
-  				#print "hi", v.group(5), v.group(6), funcIDMap[v.group(7)], v.group(7)
-            		nextFunctionID += 1
-	        fid = funcIDMap[v.group(7)]
-	    else:
-		fcalls = -1
-            	if not (v.group(4) in funcIDMap):
-           	    funcIDMap[v.group(4)] = nextFunctionID
-	    	    nextFunctionID += 1
-    	    	fid = funcIDMap[v.group(4)]
+            fstime = float(v.group(3))
+            if short == 0:
+               fcalls = int(v.group(4))
+               # 5 and 6 are self ms/call and tot ms/call
+               if not (v.group(7) in funcIDMap):
+                  funcIDMap[v.group(7)] = nextFunctionID
+                  #print "hi", v.group(5), v.group(6), funcIDMap[v.group(7)], v.group(7)
+                  nextFunctionID += 1
+               fid = funcIDMap[v.group(7)]
+            else:
+               fcalls = -1
+               if not (v.group(4) in funcIDMap):
+                  funcIDMap[v.group(4)] = nextFunctionID
+                  nextFunctionID += 1
+               fid = funcIDMap[v.group(4)]
 
-	    #print "fid=",fid,"len=",len(fdata)
+            #print "fid=",fid,"len=",len(fdata)
             while len(fdata) <= fid:
                fdata.append(None)
             fdata[fid] = (fpct, fttime, fstime, fcalls)
-	    #print "fdata[",fid,"]", fdata[fid]
+            #print "fdata[",fid,"]", fdata[fid]
    #print fileNum,
    # Put all function data together in one list for the sample step
    # - must iterate through fdata (function data) and then add it to
@@ -163,9 +163,10 @@ def gensvm(filename, fileNum):
 
    stepData[fileNum] = step
    #print "stepData[fileNum]=", stepData[fileNum]
+   # end gensvm() function
 
 #
-# Output aggregate sample data in libsvm format
+# What does findRank() do????
 #
 def findRank(rfile):
    rank = {}
@@ -176,8 +177,15 @@ def findRank(rfile):
          rank[int(strs[0])] = int(strs[1].rstrip())
       j+=1
    return(rank)
+
+# These are at global scope -- execute immediately!!!
+# - should never include code like this in between function definitions!
 rfile = open(sys.argv[3])
 rank = findRank(rfile)
+
+#
+# Output aggregate sample data in libsvm format
+#
 def outputData(totSteps):
    csvfile = open("data.csv", "w")
    newgmonfile = open("newGmon.data", "w")
@@ -191,32 +199,32 @@ def outputData(totSteps):
       #print "pstep=", pstep
       #print "step=", step
       if (not step):
-	 continue
+         continue
 
       check = 0
       # Check if the line is empty
       for k in range(10,len(step),10):
          # added skip if close to zero since getting many 0s on minixyce
          if abs(step[k+1]-pstep[k+1]) > 0:#0.001:
-	      #print "diff=", abs(step[k+1]-pstep[k+1])
-	      mylist = [];
-              check = 1 
+            #print "diff=", abs(step[k+1]-pstep[k+1])
+            mylist = [];
+            check = 1 
          # num calls is processed using fraction of total, to keep < 1
          #if ((step[k+2]-pstep[k+2]) / float(step[k+2]) > 0.1):
-              #check = 1
+             #check = 1
       if (check == 0 and not mylist):
-	      continue
+         continue
       if (check == 0):
-	 #print "step =", step_num
-	 #print "mylist", mylist
+         #print "step =", step_num
+         #print "mylist", mylist
          #print step_num,
-	 for x in mylist:
-	    #print "{0}:{1}".format(x+1,0),
-	    functions[f].append(x/10)
-	 #print ""
-	 functions.append([])
-	 step_num = step_num + 1
-	 continue
+         for x in mylist:
+            #print "{0}:{1}".format(x+1,0),
+            functions[f].append(x/10)
+         #print ""
+         functions.append([])
+         step_num = step_num + 1
+         continue
       sortedbyTime = []
       newgmonfile.write(str(step_num))
       newgmonfile.write(" ")
@@ -224,56 +232,53 @@ def outputData(totSteps):
 
       #print step_num,
       for k in range(10,len(step),10):
-	 #print "{0}:{1} {2}:{3} dd".format(k+1,step[k+1],k+2,step[k+2]),
-	 #print "{0}:{1} ".format(k,step[k]),
-	 #print "{0}:{1}-{2}:{3}".format(k+1,step[k+1],k+1,pstep[k+1]),
+         #print "{0}:{1} {2}:{3} dd".format(k+1,step[k+1],k+2,step[k+2]),
+         #print "{0}:{1} ".format(k,step[k]),
+         #print "{0}:{1}-{2}:{3}".format(k+1,step[k+1],k+1,pstep[k+1]),
          # added skip if close to zero since getting many 0s on minixyce
-	 c = 0
-	 if abs(step[k+1]-pstep[k+1]) > 0.001: # or abs(step[k+2]-pstep[k+2]):
-	     c = 1
- 
-	      
+         c = 0
+         if abs(step[k+1]-pstep[k+1]) > 0.001: # or abs(step[k+2]-pstep[k+2]):
+            c = 1
 
-#	     if step[k+2] > 0 and (step[k+2]-pstep[k+2]) >  0.01: 
-#		     print "{0}:{1} {2}:{3}".format(k+1,round(step[k+1]-pstep[k+1],3),k+2,round((step[k+2]-pstep[k+2]) / float(step[k+2])/10,4)), # Function index and the time diff and one if function is called
-#	     else:
-#		     print "{0}:{1} {2}:0".format(k+1,round(step[k+1]-pstep[k+1],3),k+2), # Function index and the time diff and one if function is called
-
+#           if step[k+2] > 0 and (step[k+2]-pstep[k+2]) >  0.01: 
+#              print "{0}:{1} {2}:{3}".format(k+1,round(step[k+1]-pstep[k+1],3),k+2,round((step[k+2]-pstep[k+2]) / float(step[k+2])/10,4)), # Function index and the time diff and one if function is called
+#           else:
+#              print "{0}:{1} {2}:0".format(k+1,round(step[k+1]-pstep[k+1],3),k+2), # Function index and the time diff and one if function is called
              #########
              # NOTE: This will not create a regular SVM file
              #########
-#	     if (step[k+2] == 0 and pstep[k+2] == 0 or step[k+2]-pstep[k+2] == -1):
-#			step[k+2] = 1
-#             print "{0}:{1}:{2}".format(k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]), # Function index and the time diff and count
-	     if step[k+2] == -1 or pstep[k+2] == -1:
-		continue
-	     else:
-		#print "{0}:{1}".format(k+1,step[k+1]-pstep[k+1]), # Function index and the time diff
-		interval.append([k+1,step[k+1]-pstep[k+1]])
-		functions[f].append(k/10)
-		mylist.append(k)
-		function = [k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2],rank[k+1]]#round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]]
-		#print rank,
-		#print function
-		sortedbyTime.append(function)
-		#print sortedbyTime
-		# print "{0}".format(k+1), # Function index only
-		# num calls is processed using fraction of total, to keep < 1
-		#         if c == 1 and step[k+2] > 0 and ((step[k+2]-pstep[k+2]) / float(step[k+2])) >  0.01:
-		#			print "{0}:{1}".format(k+2,round((step[k+2]-pstep[k+2]) / float(step[k+2])/10,4)),
-		#			print "{0}:{1}".format(k+2,step[k+2]-pstep[k+2]),
-		#	 else:
-		#		if c == 1:
-		#			print "{0}:0".format(k+2),
-		#tmp3.sort(key=lambda x:(x[1],-x[2]),reverse=False)
-		sortedfun = sorted(sortedbyTime,key= lambda x:(x[2],-x[3]), reverse = False)
-		#print sortedfun
-		#print "{0}:{1}".format(sortedfun[0][0],sortedfun[0][3]),
-		#newgmonfile.write(str(sortedfun[0][0]))
-		#newgmonfile.write(":")
-		#newgmonfile.write(str(sortedfun[0][2]))
-		#newgmonfile.write("")
-		#newgmonfile.write("\n")
+#           if (step[k+2] == 0 and pstep[k+2] == 0 or step[k+2]-pstep[k+2] == -1):
+#              step[k+2] = 1
+#           print "{0}:{1}:{2}".format(k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]), # Function index and the time diff and count
+            if step[k+2] == -1 or pstep[k+2] == -1:
+               continue
+            else:
+               #print "{0}:{1}".format(k+1,step[k+1]-pstep[k+1]), # Function index and the time diff
+               interval.append([k+1,step[k+1]-pstep[k+1]])
+               functions[f].append(k/10)
+               mylist.append(k)
+               function = [k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2],rank[k+1]]#round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]]
+               #print rank,
+               #print function
+               sortedbyTime.append(function)
+               #print sortedbyTime
+               # print "{0}".format(k+1), # Function index only
+               # num calls is processed using fraction of total, to keep < 1
+               #         if c == 1 and step[k+2] > 0 and ((step[k+2]-pstep[k+2]) / float(step[k+2])) >  0.01:
+               #         print "{0}:{1}".format(k+2,round((step[k+2]-pstep[k+2]) / float(step[k+2])/10,4)),
+               #         print "{0}:{1}".format(k+2,step[k+2]-pstep[k+2]),
+               #    else:
+               #      if c == 1:
+               #         print "{0}:0".format(k+2),
+               #tmp3.sort(key=lambda x:(x[1],-x[2]),reverse=False)
+               sortedfun = sorted(sortedbyTime,key= lambda x:(x[2],-x[3]), reverse = False)
+               #print sortedfun
+               #print "{0}:{1}".format(sortedfun[0][0],sortedfun[0][3]),
+               #newgmonfile.write(str(sortedfun[0][0]))
+               #newgmonfile.write(":")
+               #newgmonfile.write(str(sortedfun[0][2]))
+               #newgmonfile.write("")
+               #newgmonfile.write("\n")
       #print ""
 
       pstep = step
@@ -287,11 +292,11 @@ def outputData(totSteps):
    index = 0
    for i, inter in enumerate(intervals):
       if not inter:
-	 count +=1
-	 continue
+         count +=1
+         continue
       print index,
       for func in inter:
-	 print "{0}:{1}".format(func[0],func[1]),
+         print "{0}:{1}".format(func[0],func[1]),
       print ""
       index +=1
    skippedInterPer = (count/(len(intervals)*1.0))
@@ -299,6 +304,7 @@ def outputData(totSteps):
    skippedfile.write("The % of skipped intervals is ")
    skippedfile.write(str(skippedInterPer))
    skippedfile.write("\n")
+
 # print function name mapping
 def outputFuncNames():
    i = 1
@@ -338,7 +344,7 @@ for entry in listOfFiles:
    gensvm(fname, i)
    i = i + 1
    #progress(i, total+2, status='Extract Gproph files')
-	#print (entry)
+   #print (entry)
 
 numFiles = i
 functionss =  funcIDMap.values()
@@ -364,13 +370,13 @@ for h,inter in enumerate(functions):
       csvfile.write(str(h))
       csvfile.write(",")
       for fun in functionss:
-	 if fun in inter:
-	    csvfile.write("1")
-	 else:
-	    csvfile.write("0")
-	 if fun == functionss[-1]:
-	    csvfile.write("\n")
-	 else:
-	    csvfile.write(",")
+         if fun in inter:
+            csvfile.write("1")
+         else:
+            csvfile.write("0")
+         if fun == functionss[-1]:
+            csvfile.write("\n")
+         else:
+            csvfile.write(",")
 #progress(total, total, status='Write the SVM file')
 

@@ -68,7 +68,7 @@ def gensvm(filename, fileNum):
    global nextFunctionID
    global numFiles
    if not(os.path.isfile(filename+".new")):
-	os.system("gprof -b {0} {1} > {1}.new".format(progFile,filename))
+      os.system("gprof -b {0} {1} > {1}.new".format(progFile,filename))
    inf = open("{0}.new".format(filename))
    inTable = False
    fdata = []
@@ -82,28 +82,28 @@ def gensvm(filename, fileNum):
          # change function match from \w to non-newline because 
          # of C++ class/template names (:,<>,spaces,...)
          v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
-	 short = 0
-	 if v == None:
-		v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
-		short = 1
+         short = 0
+         if v == None:
+            v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
+            short = 1
 
-	 if v != None:
-	    fpct = float(v.group(1))
+         if v != None:
+            fpct = float(v.group(1))
             fttime = float(v.group(2))
-      	    fstime = float(v.group(3))
-	    if short == 0:
-		fcalls = int(v.group(4))
-		# 5 and 6 are self ms/call and tot ms/call
-	        if not (v.group(7) in funcIDMap):
-    			funcIDMap[v.group(7)] = nextFunctionID
-            		nextFunctionID += 1
-	        fid = funcIDMap[v.group(7)]
-	    else:
-		fcalls = -1
-            	if not (v.group(4) in funcIDMap):
-           	    funcIDMap[v.group(4)] = nextFunctionID
-	    	    nextFunctionID += 1
-    	    	fid = funcIDMap[v.group(4)]
+            fstime = float(v.group(3))
+            if short == 0:
+               fcalls = int(v.group(4))
+               # 5 and 6 are self ms/call and tot ms/call
+               if not (v.group(7) in funcIDMap):
+                  funcIDMap[v.group(7)] = nextFunctionID
+                  nextFunctionID += 1
+               fid = funcIDMap[v.group(7)]
+            else:
+               fcalls = -1
+               if not (v.group(4) in funcIDMap):
+                  funcIDMap[v.group(4)] = nextFunctionID
+                  nextFunctionID += 1
+               fid = funcIDMap[v.group(4)]
 
             while len(fdata) <= fid:
                fdata.append(None)
@@ -136,49 +136,46 @@ def outputData(totSteps):
    intervals =  []
    for i,step in enumerate(stepData):
       if (not step):
-	 continue
+         continue
       check = 0
       # Check if the line is empty
       for k in range(10,len(step),10):
          # added skip if close to zero since getting many 0s on minixyce
          if abs(step[k+1]-pstep[k+1]) > 0:#0.001:
-	      mylist = [];
-              check = 1 
+            mylist = [];
+            check = 1 
          # num calls is processed using fraction of total, to keep < 1
       if (check == 0 and not mylist):
          continue
       if (check == 0):
-	 #print step_num,
+         #print step_num,
          for x in mylist:
-	    m = 10
-	    #intervals.append([x+1,0,0])
+            m = 10
+            #intervals.append([x+1,0,0])
             #print "{0}:{1}:{2}".format(x+1,0,0),
          
-	 #print ""
+         #print ""
          #step_num = step_num + 1
-	 continue
+         continue
       interval = []
       #print step_num,
       for k in range(10,len(step),10):
-	 
-
          # added skip if close to zero since getting many 0s on minixyce
-	 c = 0
+         c = 0
          if abs(step[k+1]-pstep[k+1]) > 0.001:
-
-	     if (k+1) not in rank:
-         	 rank[k+1]=1
-	     else:
-                 rank[k+1] +=1
-             #########
-             # NOTE: This will not create a regular SVM file
-             #########
-	     if step[k+2] == -1 or pstep[k+2] == -1:
-		continue
-	     else:
-		#print "{0}:{1}:{2}".format(k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]), # Function index and the time diff and count
-		interval.append([k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]])
-		mylist.append(k)
+            if (k+1) not in rank:
+               rank[k+1]=1
+            else:
+               rank[k+1] +=1
+            #########
+            # NOTE: This will not create a regular SVM file
+            #########
+            if step[k+2] == -1 or pstep[k+2] == -1:
+               continue
+            else:
+               #print "{0}:{1}:{2}".format(k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]), # Function index and the time diff and count
+               interval.append([k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]])
+               mylist.append(k)
          # num calls is processed using fraction of total, to keep < 1
 
       #print ""
@@ -191,11 +188,11 @@ def outputData(totSteps):
    index = 0
    for i, inter in enumerate(intervals):
       if not inter:
-	 count +=1
-	 continue
+         count +=1
+         continue
       print index,
       for func in inter:
-	 print "{0}:{1}:{2}".format(func[0],func[1],func[2]),
+         print "{0}:{1}:{2}".format(func[0],func[1],func[2]),
       print ""
       index += 1
   #print "hi"
@@ -214,6 +211,7 @@ def outputFuncNames():
       i += 1
    outf.write("}")
    outf.close()
+
 def outputFunctionRank():
    outfile = open("rank.svm","w")
    outfile.write("FID:Rank\n")

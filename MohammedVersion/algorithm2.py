@@ -72,7 +72,7 @@ def findRank(rfile):
    for l in rfile:
       strs = l.split(":")
       if j != 0:
-	 rank[int(strs[0])+1] = int(strs[1].rstrip())
+         rank[int(strs[0])+1] = int(strs[1].rstrip())
       j+=1
    return(rank)  
 
@@ -89,7 +89,7 @@ def findOptKElbow(clParams):
       # scaled by lower (and probably bigger) one, then times
       # loglog of the # of clusters (1-log seemed too much)
       if d1 <= 0:
-                continue
+         continue
       dd = ((d1 - d2) / d1) * math.log(math.log(i+1)+1)
       # try only accepting new if greater than 20% improvement
       if dd > maxd*1.2:
@@ -107,11 +107,11 @@ def findOptKSillho(sillhouet):
    k = 0
    for i, sill in enumerate(sillhouet):
       if sill == max(sillhouet):
-	 k = i+2
+         k = i+2
    return(k)
 
 # Run KMeans algorithm over the data set to find the clusters
-def runKmenas(X, cluster_range):
+def runKmeans(X, cluster_range):
    centroids = []
    cld = []
    clparms = []
@@ -159,7 +159,7 @@ def runKmenas(X, cluster_range):
 
       interias.append(interia)
       if basedist == 0:
-	 basedist =interia
+         basedist =interia
       cld.append(labels)
       clparms.append(interia/basedist)
 
@@ -170,16 +170,14 @@ def findClust(cld,k):
    clust = []
    for j in range(0,len(cld[0])):
       for i in range(0,8):
-	 if i == k:
-	    clust.append(cld[i][j])
+         if i == k:
+            clust.append(cld[i][j])
    return(clust)
 
 
 #find intervals for each cluster
 interv = []
 def findIntervals(datafile,rank,distances,clust):
-   
-   
    intervals = []
    intervals1 = []
    #interv = []
@@ -196,21 +194,19 @@ def findIntervals(datafile,rank,distances,clust):
       #tmp1.append(clust[k])
       for s in strs:
 
-	 #skip the first colomn in the data file
-	 if s != "\n" and n != 0:
-	    #get id,number of calls and rank for each function
-	    tmp1.append((int((int(s.split(":")[0])+1)/10),int(s.split(":")[2]),float(s.split(":")[1])))#rank[int(s.split(":")[0])+1]))
-	    tmp.append((int((int(s.split(":")[0])+1)/10),int(s.split(":")[2]),float(s.split(":")[1]),rank[int(s.split(":")[0])+1]))
-	 if s == "\n":
-	    intervals.append(tmp)
-	    interv.append(tmp)
+         #skip the first colomn in the data file
+         if s != "\n" and n != 0:
+            #get id,number of calls and rank for each function
+            tmp1.append((int((int(s.split(":")[0])+1)/10),int(s.split(":")[2]),float(s.split(":")[1])))#rank[int(s.split(":")[0])+1]))
+            tmp.append((int((int(s.split(":")[0])+1)/10),int(s.split(":")[2]),float(s.split(":")[1]),rank[int(s.split(":")[0])+1]))
+         if s == "\n":
+            intervals.append(tmp)
+            interv.append(tmp)
 
-	    intervals1.append(tmp1)
-	    tmp = []
-	    tmp1 = []
-
+            intervals1.append(tmp1)
+            tmp = []
+            tmp1 = []
          n += 1
-
       k += 1
    C = []
    C1 = []
@@ -222,7 +218,7 @@ def findIntervals(datafile,rank,distances,clust):
       #get the distance of each interval to its centroid
       intervals[i].append(distances[i][clus])
       for j in range(0,int(max(clust))+1):
-	 intervals1[i].append(distances[i][j])
+         intervals1[i].append(distances[i][j])
       C1[clus].append(intervals1[i])
       # add each interval to its cluster
       C[clus].append(intervals[i])
@@ -253,8 +249,8 @@ def findInstPoint(C,clust):
              tmp3.append((f[0],f[2],f[3]))
              #sorts the functions first by the number of calls (ascending) and then by rank (descending)
           tmp3.sort(key=lambda x:(x[1],-x[2]),reverse=False)
-	  tmp3.append(inter[-1])
-	  C2[i].append(tmp3)
+          tmp3.append(inter[-1])
+          C2[i].append(tmp3)
    count = 0
    x = 0
    allintervals = 0
@@ -272,74 +268,72 @@ def findInstPoint(C,clust):
       #Sort intervals in Ci by distance to the centroid
       C[i].sort(key=lambda f: f[-1], reverse = False)
       for inter in C[i]:
-	  
-	  covered = 0
-	  tmp3 = []
-	  preCovered = 0
-	  
-	  #checks to see if this interval is already covere
-	  for f in inter[:-1]:
-	     for fun in P[i]:
-		if f[0] in fun:
-		   covered=1
+          
+          covered = 0
+          tmp3 = []
+          preCovered = 0
+          
+          #checks to see if this interval is already covere
+          for f in inter[:-1]:
+             for fun in P[i]:
+                if f[0] in fun:
+                   covered=1
 
-	  #skip the interval if it's covered
-	  if covered == 1:
-	     count +=1
-	  #get the phase coverage and overall coverage of each intrumentation point
-	  if (inter == C[i][-1] and covered == 1 and j == len(C[i])):
-	     phaseCover = round(float(float(count)/float(allintervals)),3)
-	     allCov = round(float(float(count)/float(len(C[i]))),3)
-	     cove.append(allCov)
-	     phaseC.append(phaseCover)
+          #skip the interval if it's covered
+          if covered == 1:
+             count +=1
+          #get the phase coverage and overall coverage of each intrumentation point
+          if (inter == C[i][-1] and covered == 1 and j == len(C[i])):
+             phaseCover = round(float(float(count)/float(allintervals)),3)
+             allCov = round(float(float(count)/float(len(C[i]))),3)
+             cove.append(allCov)
+             phaseC.append(phaseCover)
 
-	  if (x != 0 and covered == 0 ):
-	     phaseCover = round(float(float(count)/float(allintervals)),3)
-	     allCov = round(float(float(count)/float(len(C[i]))),3)
-	     cove.append(allCov)
-	     phaseC.append(phaseCover)
+          if (x != 0 and covered == 0 ):
+             phaseCover = round(float(float(count)/float(allintervals)),3)
+             allCov = round(float(float(count)/float(len(C[i]))),3)
+             cove.append(allCov)
+             phaseC.append(phaseCover)
 
-	  if covered == 1:
-	     j+=1
-	     continue
+          if covered == 1:
+             j+=1
+             continue
 
-	  #get the required data from intervals
-	  for f in inter[:-1]:
-	     tmp3.append((f[0],f[1],f[3]))
-	     #sorts the functions first by the number of calls (ascending) and then by rank (descending)
-	  #tmp3.sort(key=lambda x:(-x[2],x[1]),reverse=False)
-	  #sort based on number of calls and then rank
-	  tmp3.sort(key=lambda x:(x[1],-x[2]),reverse=False)
-	  #takes the topmost function from this sort as the function to instrument in order to cover this interval
-	  f = tmp3[0]
-	  p = []
-	  #if number of calls of a function is 0, instrumentation is in a loop and body otgerwise
-	  if f[1] == 0:
-	     p = [f[0], "loop"]
-	  else:
-	     p = [f[0], "body"]
-	  if p not in P[i]:
-	     fun1 = f[0]
-	     count = 1
-	     x = f[0]
-	     P[i].append(p)
+          #get the required data from intervals
+          for f in inter[:-1]:
+             tmp3.append((f[0],f[1],f[3]))
+             #sorts the functions first by the number of calls (ascending) and then by rank (descending)
+          #tmp3.sort(key=lambda x:(-x[2],x[1]),reverse=False)
+          #sort based on number of calls and then rank
+          tmp3.sort(key=lambda x:(x[1],-x[2]),reverse=False)
+          #takes the topmost function from this sort as the function to instrument in order to cover this interval
+          f = tmp3[0]
+          p = []
+          #if number of calls of a function is 0, instrumentation is in a loop and body otgerwise
+          if f[1] == 0:
+             p = [f[0], "loop"]
+          else:
+             p = [f[0], "body"]
+          if p not in P[i]:
+             fun1 = f[0]
+             count = 1
+             x = f[0]
+             P[i].append(p)
 
+          if covered == 0 and j == len(C[i]) and j != 1:
+             
+             coverage.append(round(float(float(count)/float(allintervals)),3))
+             phaseC.append(round(float(float(count)/float(allintervals)),3))
+             phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
 
+             cove.append(round(float(float(count)/float(len(C[i]))),3))
 
-	  if covered == 0 and j == len(C[i]) and j != 1:
-	     
-	     coverage.append(round(float(float(count)/float(allintervals)),3))
-	     phaseC.append(round(float(float(count)/float(allintervals)),3))
-	     phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
-
-	     cove.append(round(float(float(count)/float(len(C[i]))),3))
-
-	  if covered == 0  and (j == len(C[i]) and j == 1):
-	     coverage.append(round(float(float(count)/float(allintervals)),3))
-	     phaseC.append(round(float(float(count)/float(allintervals)),3)) 
-	     phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
-	     cove.append(round(float(float(count)/float(len(C[i]))),3))
-	  j+=1
+          if covered == 0  and (j == len(C[i]) and j == 1):
+             coverage.append(round(float(float(count)/float(allintervals)),3))
+             phaseC.append(round(float(float(count)/float(allintervals)),3)) 
+             phaseCov.append(round(float(float(count)/float(len(C[i]))),3))
+             cove.append(round(float(float(count)/float(len(C[i]))),3))
+          j+=1
 
    return(P,C,coverage,phaseCov,cove,phaseC)
 
@@ -354,17 +348,17 @@ def findCoverage(functions,clusters):
    for i, function in enumerate(functions):
       
       for func in function:
-	 count = 0.0
-	 phaseCount = 0.0
-	 for interval in clusters[i]:
-	    #print interval
-	    for inter in interval[:-1]:
-	       #print inter
-	       if func[0] == inter[0]:
- 		  count +=1
+         count = 0.0
+         phaseCount = 0.0
+         for interval in clusters[i]:
+            #print interval
+            for inter in interval[:-1]:
+               #print inter
+               if func[0] == inter[0]:
+                   count +=1
          cover = count/len(clusters[i])
-	 funCover = [func[0],cover]
-	 coverage[i].append(funCover)
+         funCover = [func[0],cover]
+         coverage[i].append(funCover)
    
    return(coverage)
 
@@ -377,11 +371,11 @@ def isOverlapped(funct,clust):
 
    for i in range(0,int(max(clust))+1):
       for f in funct[i]:
-	 for cl in range(0,int(max(clust))+1):
-	    if i == cl:
-	       continue
-	    if [m for m, v in enumerate(funct[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
-	       overlapped = True
+         for cl in range(0,int(max(clust))+1):
+            if i == cl:
+               continue
+            if [m for m, v in enumerate(funct[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
+               overlapped = True
    return overlapped
 
 
@@ -402,10 +396,10 @@ def printClusters(functions3,clust,coverage,phaseCov):
    for i in range(0,int(max(clust))+1):
       sortedFunc[i]= functions3[i]
       for f in sortedFunc[i]:
-	 f.append(phaseCov[m])
-	 f.append(coverage[m])
-	
-	 m += 1
+         f.append(phaseCov[m])
+         f.append(coverage[m])
+        
+         m += 1
       sortedFunc[i].sort(key=lambda x:(x[2]),reverse=True)
 
    print
@@ -421,51 +415,51 @@ def printClusters(functions3,clust,coverage,phaseCov):
       covSum = 0
 
       for f in sortedFunc[i]:
-	 if f == sortedFunc[i][0]:
-	    existed = 0
-	    for cl in range(0,int(max(clust))+1):
-	       if i == cl:
-		  continue
-	       if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
-		  existed = 1
-		  #if existed == 1:
-		  #continue
-		  #covSum = phaseCov[k]
-		  #if covSum < threshold or f[2] == 1.0 or f[2]>threshold:
-		  #covSum += phaseCov[k]
-	    instPoints[i].append([f[0]])
-	    print "{0}\t\t{1}\t\t{2}\t\t{3}\t\t".format(int(int(f[0])), f[1],f[3],f[2]),
-	    k +=1
-	    #covSum += phaseCov[k]
-	    print "[",
-	    for cl in range(0,int(max(clust))+1):
-	       if i == cl:
-		  continue
-	       if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
-		  print cl,",",
-	    print "]"
-	    covSum += f[2]
-	 elif covSum < threshold:
-	    existed = 0
-	    for cl in range(0,int(max(clust))+1):
-	       if i == cl:
-		  continue
-	       if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
-		  existed = 1
-	    instPoints[i].append([f[0]])
-	    print "{0}\t\t{1}\t\t{2}\t\t{3}\t\t".format(int(int(f[0])), f[1],f[3],f[2]),
-	    print "[",
-	    for cl in range(0,int(max(clust))+1):
-	       if i == cl:
-		  continue
-	       if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
-		  print cl,",",
-	    print "]"
-	    covSum += f[2]
-	 else:
-	    skippedFunc[i].append(f)
-	    covSum += f[2]
-	 
+         if f == sortedFunc[i][0]:
+            existed = 0
+            for cl in range(0,int(max(clust))+1):
+               if i == cl:
+                  continue
+               if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
+                  existed = 1
+                  #if existed == 1:
+                  #continue
+                  #covSum = phaseCov[k]
+                  #if covSum < threshold or f[2] == 1.0 or f[2]>threshold:
+                  #covSum += phaseCov[k]
+            instPoints[i].append([f[0]])
+            print "{0}\t\t{1}\t\t{2}\t\t{3}\t\t".format(int(int(f[0])), f[1],f[3],f[2]),
+            k +=1
+            #covSum += phaseCov[k]
+            print "[",
+            for cl in range(0,int(max(clust))+1):
+               if i == cl:
+                  continue
+               if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
+                  print cl,",",
+            print "]"
+            covSum += f[2]
+         elif covSum < threshold:
+            existed = 0
+            for cl in range(0,int(max(clust))+1):
+               if i == cl:
+                  continue
+               if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
+                  existed = 1
+            instPoints[i].append([f[0]])
+            print "{0}\t\t{1}\t\t{2}\t\t{3}\t\t".format(int(int(f[0])), f[1],f[3],f[2]),
+            print "[",
+            for cl in range(0,int(max(clust))+1):
+               if i == cl:
+                  continue
+               if [m for m, v in enumerate(sortedFunc[cl]) if v[0] == f[0] and v[1]==f[1]] != []:
+                  print cl,",",
+            print "]"
+            covSum += f[2]
+         else:
+            skippedFunc[i].append(f)
+            covSum += f[2]
+         
       print
    print "\n\n--------------------------------\n Function names Per Phase\n--------------------------------\n"
    for i in range(0,int(max(clust))+1):
@@ -473,8 +467,8 @@ def printClusters(functions3,clust,coverage,phaseCov):
       print "Phase ", str(i)
       print "###################"
       for f in instPoints[i]:
-	 if idmap != None and f[0] in idmap:
-	    print "{0}: {1}".format(f[0],idmap[f[0]])
+         if idmap != None and f[0] in idmap:
+            print "{0}: {1}".format(f[0],idmap[f[0]])
    print "\n\n--------------------------------\n Skipped Function names Per Phase\n--------------------------------\n"
    for i in range(0,int(max(clust))+1):
       print "###################"
@@ -484,7 +478,7 @@ def printClusters(functions3,clust,coverage,phaseCov):
          if idmap != None and f[0] in idmap:
             print "{0}: {1} Phase Coverage {2}".format(f[0],idmap[f[0]],f[2])
  
-	 
+         
 
 #
 # Main program
@@ -529,13 +523,13 @@ plt.show()"""
 """interfile =  open("data.dat", "w")
 
 for i in range(len(reduced_data)):
-        interfile.write(str(reduced_data[i][0]))
-        interfile.write(" ")
-        interfile.write(str(reduced_data[i][1]))
-        interfile.write("\n")"""
+   interfile.write(str(reduced_data[i][0]))
+   interfile.write(" ")
+   interfile.write(str(reduced_data[i][1]))
+   interfile.write("\n")"""
 
 range_n_clusters = [2,3,4,5,6,7,8,9,10,11,12,13]
-kmeanrun = runKmenas(X,range_n_clusters)#scaled,range_n_clusters)
+kmeanrun = runKmeans(X,range_n_clusters)#scaled,range_n_clusters)
 interias = kmeanrun[3]
 #from kneed import KneeLocator
 #kn = KneeLocator(range_n_clusters, interias, curve='convex', direction='decreasing')
@@ -604,19 +598,17 @@ cov = findCoverage(P,C)
 
 labelfile =  open("label.dat", "w")
 for i in optlabel:
-        labelfile.write(str(i))
-        labelfile.write(" ")
-#       labelfile.write("\n")
+   labelfile.write(str(i))
+   labelfile.write(" ")
+#  labelfile.write("\n")
 labelfile.write("\n")
 centerfile =  open("center.dat", "w")
 
 for i in range(len(optcentroids)):
-
-        centerfile.write(str(optcentroids[i][0]))
-        centerfile.write(" ")
-        centerfile.write(str(optcentroids[i][1]))
-        centerfile.write("\n")
-
+   centerfile.write(str(optcentroids[i][0]))
+   centerfile.write(" ")
+   centerfile.write(str(optcentroids[i][1]))
+   centerfile.write("\n")
 
 #clusterfile = open("cluster.data", "w")
 with open("cluster.data", "w") as clusterfile:
@@ -624,7 +616,7 @@ with open("cluster.data", "w") as clusterfile:
       clusterfile.write("cluster:" + str(i) + "\n")
       wr = csv.writer(clusterfile)
       wr.writerows(C2[i])
-    #  wr.writerows(clustdist[optkElbow[0]-2][i])
+   #  wr.writerows(clustdist[optkElbow[0]-2][i])
    #for i,cluster in enumerate(J):
    #clusterfile.write(str(i))
    #clusterfile.write("\n")
@@ -641,13 +633,13 @@ clusterfile.close()
       #print "{0},{1} ".format(i,optlabel[i]),
       #print interval[-1]
       #for function in interval[:-1]:
-	 #print " {0}:{1}".format(function[0],function[3])
-	 #gmonclusterfile.write(" ")
-	 #gmonclusterfile.write(str(function[0]))
-	 #gmonclusterfile.write(":")
-	 #gmonclusterfile.write(str(function[3]))
-	 
-	 #print "{0}:{1}".format(function[0],function[3]),
+         #print " {0}:{1}".format(function[0],function[3])
+         #gmonclusterfile.write(" ")
+         #gmonclusterfile.write(str(function[0]))
+         #gmonclusterfile.write(":")
+         #gmonclusterfile.write(str(function[3]))
+         
+         #print "{0}:{1}".format(function[0],function[3]),
    #print
       #gmonclusterfile.write("\n")"""
       
