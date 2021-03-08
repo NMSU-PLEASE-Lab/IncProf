@@ -11,6 +11,10 @@
 # recommended to instrument in the scientafic application to produce phases and 
 # heartbeat information
 #
+# It uses clustering algorithm called k-means to chategorize the intervals into phases
+# To find the optimal number of clusters, two method are used, elbow and silouette
+# Users can specify which method to use
+#
 import re;
 import sys;
 import os;
@@ -30,8 +34,8 @@ import numpy as np
 from sklearn.metrics import silhouette_score
 import csv
 #import pandas as pd  # not used right now
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
+#import matplotlib.pyplot as plt
+#import matplotlib.colors as colors
 
 # Show progress
 def progress(count, total, status=''):
@@ -153,7 +157,13 @@ def runKmeans(X, cluster_range):
       # The silhouette_score gives the average value for all the samples.
       # This gives a perspective into the density and separation of the formed
       # clusters
-      silhouette_avg = silhouette_score(X, labels,metric = 'euclidean')
+
+      # This condition to avoid error when # of clusters is 1
+      # It assumes that the silhouette value when k=1 is 1
+      if i==1:
+          silhouette_avg = 1
+      else:
+          silhouette_avg = silhouette_score(X, labels,metric = 'euclidean')
       silhout.append(silhouette_avg)
       #cross = pd.crosstab(X,labels)
 
@@ -320,6 +330,7 @@ def findInstPoint(C,clust):
              x = f[0]
              P[i].append(p)
 
+          #get the phase coverage and overall coverage of each intrumentation point
           if covered == 0 and j == len(C[i]) and j != 1:
              
              coverage.append(round(float(float(count)/float(allintervals)),3))
@@ -528,7 +539,8 @@ for i in range(len(reduced_data)):
    interfile.write(str(reduced_data[i][1]))
    interfile.write("\n")"""
 
-range_n_clusters = [2,3,4,5,6,7,8,9,10,11,12,13]
+range_n_clusters = [1,2,3,4,5,6,7,8,9,10,11,12,13]
+# Run kmeans algorithim using different values of K(# of clusters)
 kmeanrun = runKmeans(X,range_n_clusters)#scaled,range_n_clusters)
 interias = kmeanrun[3]
 #from kneed import KneeLocator
@@ -546,12 +558,12 @@ else:
 rank = findRank(rfile)
 #optK=3
 clustdist = kmeanrun[1]
-distances = clustdist[optK-2]
+distances = clustdist[optK-1]
 centroid = kmeanrun[6]
-optcentroids = centroid[optK-2]
+optcentroids = centroid[optK-1]
 labels = kmeanrun[7]
-optlabel = labels[optK-2]
-clust = kmeanrun[0][optK-2]
+optlabel = labels[optK-1]
+clust = kmeanrun[0][optK-1]
 
 C,C2,intervalss = findIntervals(datafile,rank,distances,clust)
 P1 = findInstPoint(C,clust)
@@ -562,18 +574,20 @@ phCov = P1[4]
 phaseC = P1[4]
 cove = P1[5]
 overlapped = isOverlapped(P,clust)
-#print overlapped
-#print optK
 #cov = findCoverage(P,C)
 pathToOptK = []
 pathToOptK.append(optK)
-while(overlapped and optK>2):
+
+# If the produced phases are overlapped, decrement optimal k by 1
+# and try to reproce phases again
+
+while(overlapped and optK>1):
    optK=optK -1
    pathToOptK.append(optK)
-   distances = clustdist[optK-2]
-   optcentroids = centroid[optK-2]
-   optlabel = labels[optK-2]
-   clust = kmeanrun[0][optK-2]
+   distances = clustdist[optK-1]
+   optcentroids = centroid[optK-1]
+   optlabel = labels[optK-1]
+   clust = kmeanrun[0][optK-1]
    datafile = open(sys.argv[1])
    C,C2,intervalss = findIntervals(datafile,rank,distances,clust)
    P1 = findInstPoint(C,clust)
@@ -582,10 +596,13 @@ while(overlapped and optK>2):
    Cov = P1[5]
    phCov = P1[4]
    overlapped = isOverlapped(P,clust)
-   print overlapped
+
+# Show the values of optimal till the non-overlapped phases produced
 print "K\tsilhouette"
 for n in pathToOptK:
-   print "{0}\t{1}".format(n,silhouette[n-2])
+   print "{0}\t{1}".format(n,silhouette[n-1])
+
+# This part to plot the clusters
 colors = ['#8B0000', '#BC8F8F','#FFFF00','#008000','#FFC0CB', '#F0F8FF']
 """for p,red in enumerate(reduced_data):
    plt.scatter(red[0],red[1],c=colors[optlabel[p]], s=50)

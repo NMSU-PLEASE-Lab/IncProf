@@ -130,7 +130,8 @@ def gensvm(filename, fileNum):
                   nextFunctionID += 1
                fid = funcIDMap[v.group(7)]
             else:
-               fcalls = -1
+               # to skip functions with blank # of calls, make fcalls = -1
+               fcalls = 0
                if not (v.group(4) in funcIDMap):
                   funcIDMap[v.group(4)] = nextFunctionID
                   nextFunctionID += 1
