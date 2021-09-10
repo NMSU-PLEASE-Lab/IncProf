@@ -58,3 +58,36 @@ count.
 reset back to 0 each time it is sampled. This may make it easier to see
 time-varying behavior.
 
+------------------------------------------------------------------
+
+Heartbeat as duration
+
+ldms_initiate_hearbeat(heartbeat ID)
+- this will record a beginning timestamp for this heartbeat
+
+ldms_conclude_heartbeat(heartbeat ID)
+- takes ending timestamp
+- calculates hbID duration as (end-begin)
+- updates hbID average as ((curavg*N)+duration)/(N+1)
+- increments hbID count (to N+1)
+
+Sampling resets average and count to 0
+- must be mutexed
+- sampling is two values: current count, current average duration
+- might be useful to have variance, too
+- might be useful to have bad data threshold
+
+------------------------------------------------------------------
+
+Heartbeat as impulse function w/ average time since last HB (any ID)
+
+ldms_heartbeat(heartbeatID)
+- take current timestamp
+- calc HB interval duration as (current-timestamp - last-HB-timestamp)
+- updates hbID interval average as ((curavg*N)+duration)/(N+1)
+- update hbID count to N+1
+- set last-HB-timestamp to current timestamp
+
+Sampling resets average and count to 0
+
+
