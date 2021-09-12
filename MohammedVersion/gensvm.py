@@ -70,12 +70,6 @@ def gensvm(filename, fileNum):
    #try:
    #   print "1"
    if not(os.path.isfile(filename+".new")):
-      os.system("gprof -b {0} {1} > {1}.new".format(progFile,filename))
-   #   print "2"
-   #except OSError:
-   #   print "3"
-   #   return
-   #print "{0}.new".format(filename)
    inf = open("{0}.new".format(filename))
    inTable = False
    fdata = []
@@ -116,12 +110,11 @@ def gensvm(filename, fileNum):
             short = 1
 
          if v != None:
-            #print v.group(1), v.group(2), v.group(3), v.group(4) 
-            #print v.group(5), v.group(6), v.group(7)
             fpct = float(v.group(1))
             fttime = float(v.group(2))
             fstime = float(v.group(3))
             if short == 0:
+               sms_call = float(v.group(5)) # self ms/call, added to skip functions with 0 value
                fcalls = int(v.group(4))
                # 5 and 6 are self ms/call and tot ms/call
                if not (v.group(7) in funcIDMap):
@@ -131,18 +124,16 @@ def gensvm(filename, fileNum):
                fid = funcIDMap[v.group(7)]
             else:
                # to skip functions with blank # of calls, make fcalls = -1
-               fcalls = 0
+               fcalls = -1
+               sms_call = 0  # if it's blank, make it 0
                if not (v.group(4) in funcIDMap):
                   funcIDMap[v.group(4)] = nextFunctionID
                   nextFunctionID += 1
                fid = funcIDMap[v.group(4)]
 
-            #print "fid=",fid,"len=",len(fdata)
             while len(fdata) <= fid:
                fdata.append(None)
-            fdata[fid] = (fpct, fttime, fstime, fcalls)
-            #print "fdata[",fid,"]", fdata[fid]
-   #print fileNum,
+            fdata[fid] = (fpct, fttime, fstime, fcalls, sms_call)
    # Put all function data together in one list for the sample step
    # - must iterate through fdata (function data) and then add it to
    # - the step list; we are using indices f*10 through f*10+9 for 
@@ -151,23 +142,21 @@ def gensvm(filename, fileNum):
    for i,v in enumerate(fdata):
       if v == None:
          continue
-      #print v, "i=", i
-      #print "{0}:{1} {2}:{3}".format(i*10,v[0]/10.0,i*10+1,v[1]),
       while len(step) <= i*10+5:
          step.append(0)
-      #step[i*10] = v[0]/10.0
       step[i*10+1] = v[2]   # self time
       step[i*10+2] = v[3]   # num calls
+      step[i*10+3] = v[4]   # self ms/call
 
    while len(stepData) <= fileNum:
       stepData.append(None)
 
    stepData[fileNum] = step
-   #print "stepData[fileNum]=", stepData[fileNum]
-   # end gensvm() function
+
+#--------------------------------- end gensvm() function-------------------------------#
 
 #
-# What does findRank() do????
+# Find the rank of each function from the rank file, it is used to do clustering using ranks of functions instead of time
 #
 def findRank(rfile):
    rank = {}
@@ -179,15 +168,13 @@ def findRank(rfile):
       j+=1
    return(rank)
 
-# These are at global scope -- execute immediately!!!
-# - should never include code like this in between function definitions!
-rfile = open(sys.argv[3])
-rank = findRank(rfile)
+#------------------------------------------end of findRank-------------------------------#
+
 
 #
 # Output aggregate sample data in libsvm format
 #
-def outputData(totSteps):
+def outputData(totSteps, rank):
    csvfile = open("data.csv", "w")
    newgmonfile = open("newGmon.data", "w")
    pstep = [0]*10000;
@@ -197,8 +184,6 @@ def outputData(totSteps):
    mylist = [];
    skippedInterPer = 0.0
    for i,step in enumerate(stepData):
-      #print "pstep=", pstep
-      #print "step=", step
       if (not step):
          continue
 
@@ -216,13 +201,8 @@ def outputData(totSteps):
       if (check == 0 and not mylist):
          continue
       if (check == 0):
-         #print "step =", step_num
-         #print "mylist", mylist
-         #print step_num,
          for x in mylist:
-            #print "{0}:{1}".format(x+1,0),
             functions[f].append(x/10)
-         #print ""
          functions.append([])
          step_num = step_num + 1
          continue
@@ -230,57 +210,29 @@ def outputData(totSteps):
       newgmonfile.write(str(step_num))
       newgmonfile.write(" ")
       interval = []
-
-      #print step_num,
       for k in range(10,len(step),10):
-         #print "{0}:{1} {2}:{3} dd".format(k+1,step[k+1],k+2,step[k+2]),
-         #print "{0}:{1} ".format(k,step[k]),
-         #print "{0}:{1}-{2}:{3}".format(k+1,step[k+1],k+1,pstep[k+1]),
          # added skip if close to zero since getting many 0s on minixyce
          c = 0
          if abs(step[k+1]-pstep[k+1]) > 0.001: # or abs(step[k+2]-pstep[k+2]):
             c = 1
-
-#           if step[k+2] > 0 and (step[k+2]-pstep[k+2]) >  0.01: 
-#              print "{0}:{1} {2}:{3}".format(k+1,round(step[k+1]-pstep[k+1],3),k+2,round((step[k+2]-pstep[k+2]) / float(step[k+2])/10,4)), # Function index and the time diff and one if function is called
-#           else:
-#              print "{0}:{1} {2}:0".format(k+1,round(step[k+1]-pstep[k+1],3),k+2), # Function index and the time diff and one if function is called
-             #########
-             # NOTE: This will not create a regular SVM file
-             #########
-#           if (step[k+2] == 0 and pstep[k+2] == 0 or step[k+2]-pstep[k+2] == -1):
-#              step[k+2] = 1
-#           print "{0}:{1}:{2}".format(k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]), # Function index and the time diff and count
+            #if step[k+3] < 0.001 or pstep[k+3] < 0.001:
+            #  continue
+            # skip if # of calls is blank 
             if step[k+2] == -1 or pstep[k+2] == -1:
                continue
             else:
-               #print "{0}:{1}".format(k+1,step[k+1]-pstep[k+1]), # Function index and the time diff
-               interval.append([k+1,step[k+1]-pstep[k+1]])
+               # get the function id and difference in time between two successive profiling files
+               # this will be used as input data for clustering
+
+               interval.append([k+1,step[k+1]-pstep[k+1]]) 
+
+               # Use the rank in the gmon.data file for experiemrents
+               #interval.append([k+1,rank[k+1]])#(step[k+1]-pstep[k+1])])
                functions[f].append(k/10)
                mylist.append(k)
                function = [k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2],rank[k+1]]#round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]]
-               #print rank,
-               #print function
                sortedbyTime.append(function)
-               #print sortedbyTime
-               # print "{0}".format(k+1), # Function index only
-               # num calls is processed using fraction of total, to keep < 1
-               #         if c == 1 and step[k+2] > 0 and ((step[k+2]-pstep[k+2]) / float(step[k+2])) >  0.01:
-               #         print "{0}:{1}".format(k+2,round((step[k+2]-pstep[k+2]) / float(step[k+2])/10,4)),
-               #         print "{0}:{1}".format(k+2,step[k+2]-pstep[k+2]),
-               #    else:
-               #      if c == 1:
-               #         print "{0}:0".format(k+2),
-               #tmp3.sort(key=lambda x:(x[1],-x[2]),reverse=False)
                sortedfun = sorted(sortedbyTime,key= lambda x:(x[2],-x[3]), reverse = False)
-               #print sortedfun
-               #print "{0}:{1}".format(sortedfun[0][0],sortedfun[0][3]),
-               #newgmonfile.write(str(sortedfun[0][0]))
-               #newgmonfile.write(":")
-               #newgmonfile.write(str(sortedfun[0][2]))
-               #newgmonfile.write("")
-               #newgmonfile.write("\n")
-      #print ""
 
       pstep = step
       pstep.extend([0]*10000)
@@ -305,6 +257,8 @@ def outputData(totSteps):
    skippedfile.write("The % of skipped intervals is ")
    skippedfile.write(str(skippedInterPer))
    skippedfile.write("\n")
+
+#---------------------------------end of outputData---------------------------------#
 
 # print function name mapping
 def outputFuncNames():
@@ -332,7 +286,8 @@ progFile = sys.argv[1]
 #numFiles = int(sys.argv[2])
 filename_regexp = sys.argv[2]
 #print "start"
-
+rfile = open(sys.argv[3])
+rank = findRank(rfile)
 i = 0
 listOfFiles = glob.glob(filename_regexp)
 total = len(listOfFiles)
@@ -355,9 +310,10 @@ sortedfuncIDMap = sorted(funcIDMap.items(),key = lambda x: x[1])
 #print sortedfuncIDMap
 #print sortedfuncIDMap[0]
 #print sorted(sortedfuncIDMap, key=lambda x: x[1])
-outputData(numFiles)
+outputData(numFiles, rank)
 outputFuncNames()
-#print functions
+# To print a csv file containig all functions in each interval (0 = absent, 1 = present)
+# for experiements
 csvfile = open("data.csv", "w")
 csvfile.write("ID,")
 for fn in functionss:

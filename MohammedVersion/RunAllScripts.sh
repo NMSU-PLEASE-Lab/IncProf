@@ -26,8 +26,10 @@ rm -f gmon.* gmon*new
 rm -f svmfmap.txt
 rm -f instPoints.out
 # Get process id from gmon file names
+#rank0
 procid=$(ls gmon-0.* | cut -d "." -f2 | sort | head -n 1)
-# sed -n '2p')
+#rank1
+#procid=$(ls gmon-0.* | cut -d "." -f2 | sort | sed -n '2p')
 # Formulate gmon filename regex 
 gmon_regexp="gmon-*.$procid"
 

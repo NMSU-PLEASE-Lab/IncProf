@@ -60,6 +60,8 @@ def progress(count, total, status=''):
     sys.stderr.write('[%s] %s%s ...%s\r' % (bar, percents, '%', status))
     sys.stderr.flush()  # As suggested by Rom Ruben (see: http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console/27871113#comment50529068_27871113)
 
+#-------------------------------------------end of progress-------------------------------------#
+
 
 #
 # Generate gprof file for one sample, and record its data
@@ -92,6 +94,8 @@ def gensvm(filename, fileNum):
             fttime = float(v.group(2))
             fstime = float(v.group(3))
             if short == 0:
+               sms_call = float(v.group(5)) # self ms/call, added to skip functions with 0 value
+               #print sms_call
                fcalls = int(v.group(4))
                # 5 and 6 are self ms/call and tot ms/call
                if not (v.group(7) in funcIDMap):
@@ -100,7 +104,9 @@ def gensvm(filename, fileNum):
                fid = funcIDMap[v.group(7)]
             else:
                # to skip functions with blank # of calls, make fcalls = -1
-               fcalls = 0
+               fcalls = -1
+               sms_call = 0  # if it's blank, make it 0
+
                if not (v.group(4) in funcIDMap):
                   funcIDMap[v.group(4)] = nextFunctionID
                   nextFunctionID += 1
@@ -108,7 +114,8 @@ def gensvm(filename, fileNum):
 
             while len(fdata) <= fid:
                fdata.append(None)
-            fdata[fid] = (fpct, fttime, fstime, fcalls)
+            #print sms_call
+            fdata[fid] = (fpct, fttime, fstime, fcalls, sms_call)
    # Put all function data together in one list for the sample step
    # - must iterate through fdata (function data) and then add it to
    # - the step list; we are using indices f*10 through f*10+9 for 
@@ -121,6 +128,7 @@ def gensvm(filename, fileNum):
          step.append(0)
       step[i*10+1] = v[2]   # self time
       step[i*10+2] = v[3]   # num calls
+      step[i*10+3] = v[4]   # self ms/call
 
    while len(stepData) <= fileNum:
       stepData.append(None)
@@ -149,21 +157,13 @@ def outputData(totSteps):
       if (check == 0 and not mylist):
          continue
       if (check == 0):
-         #print step_num,
-         for x in mylist:
-            m = 10
-            #intervals.append([x+1,0,0])
-            #print "{0}:{1}:{2}".format(x+1,0,0),
-         
-         #print ""
-         #step_num = step_num + 1
          continue
       interval = []
       #print step_num,
       for k in range(10,len(step),10):
          # added skip if close to zero since getting many 0s on minixyce
          c = 0
-         if abs(step[k+1]-pstep[k+1]) > 0.001:
+         if abs(step[k+1]-pstep[k+1]) > 0:
             if (k+1) not in rank:
                rank[k+1]=1
             else:
@@ -171,11 +171,15 @@ def outputData(totSteps):
             #########
             # NOTE: This will not create a regular SVM file
             #########
+            # skip functions that have self ms/call = 0
+            #if step[k+3] < 0.001 or pstep[k+3] < 0.001:
+            #  continue
+            # skip functions with blank # of calls 
+
             if step[k+2] == -1 or pstep[k+2] == -1:
                continue
             else:
-               #print "{0}:{1}:{2}".format(k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]), # Function index and the time diff and count
-               interval.append([k+1,round(step[k+1]-pstep[k+1],3),step[k+2]-pstep[k+2]])
+               interval.append([k+1,round(step[k+1]-pstep[k+1],4),step[k+2]-pstep[k+2]])
                mylist.append(k)
          # num calls is processed using fraction of total, to keep < 1
 
@@ -196,9 +200,10 @@ def outputData(totSteps):
          print "{0}:{1}:{2}".format(func[0],func[1],func[2]),
       print ""
       index += 1
-  #print "hi"
-  #print intervals
-      
+
+#---------------------------------------end of outputData--------------------------------#
+
+# print the function names along with their id'sin svmfmap file
 def outputFuncNames():
    i = 1
    outf = open("svmfmap.txt","w")
@@ -213,12 +218,19 @@ def outputFuncNames():
    outf.write("}")
    outf.close()
 
+#-------------------------------end of outputFuncNames-----------------------------#
+
+# print function Ids with the rank of each function, it will be used in algorithm2
 def outputFunctionRank():
    outfile = open("rank.svm","w")
    outfile.write("FID:Rank\n")
    for fnid, rk in rank.items():
       outfile.write("{0}:{1}\n".format(fnid, rk))
    outfile.close()
+
+#--------------------------------end of outputFunctionRank-------------------------#
+
+
 #
 # Main program
 #
