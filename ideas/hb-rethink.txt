@@ -1,0 +1,93 @@
+
+Initial idea was one heartbeat active at any given time, with one or
+more heartbeats identifying a phase.
+
+Initial idea of phase was some fairly long-running computation that 
+exercises areas of code that no other phase exercises
+
+Experiments have shown that perhaps this is not the best way to conceptualize
+phases.
+
+For example, Gadget2 has a (simplified) main loop that looks like:
+
+  do				/* main loop */
+    {
+      find_next_sync_point_and_drift();	/* find next synchronization 
+                                 point and drift particles to this time. */
+      domain_Decomposition();	/* do domain decomposition if needed */
+      compute_accelerations(0);	/* compute accelerations for 
+				 * the particles that are to be advanced   */
+      advance_and_find_timesteps();	/* 'kick' active particles in
+					 * momentum space and compute new
+					 * timesteps for them		 */
+      All.NumCurrentTiStep++;
+	}
+
+With one second profiling intervals, however, each of these steps is
+too fast to identify as a phase -- but these are the real phases of
+Gadget!
+
+Now how to instrument this? 
+
+0. Suppose we put one heartbeat instrumentation site at the beginning of
+each of these phases. This would give us a heartbeat at the beginning of
+each of these four steps, and we should get an exactly equal count of all
+four heartbeats.
+
+1. If we use one heartbeat per phase and perform heartbeat sampling, all
+we get is counters of how many times the heartbeat happened. We can
+average these over time but we really aren't getting information about
+that phase. The time between heartbeats of the same kind would not be 
+indicative of the phase duration, since all the phases intertwine.
+
+2. We could, perhaps, also record the (average) time between heartbeats of
+different kinds; in the case of Gadget, HB 1 would always be followed by
+HB 2, and so on, and so the time between these would indicate the time in
+each phase. We could abstract this into recording the time from a heartbeat
+to the time of the next heartbeat, regardless of type.
+
+3. Alternatively, we could redefine heartbeat to be a duration of time
+between two code points. In this case we could instrument the beginning 
+and the end of some "phase", and have the beginning point record the time,
+and then have the end point produce the heartbeat with an associated duration
+value. We could keep an average duration (and perhaps variance estimate)
+as a running value that would be sampled in LDMS, along with the heartbeat
+count.
+
+4. Perhaps the heartbeat count (and average duration, etc.) should be 
+reset back to 0 each time it is sampled. This may make it easier to see
+time-varying behavior.
+
+------------------------------------------------------------------
+
+Heartbeat as duration
+
+ldms_initiate_hearbeat(heartbeat ID)
+- this will record a beginning timestamp for this heartbeat
+
+ldms_conclude_heartbeat(heartbeat ID)
+- takes ending timestamp
+- calculates hbID duration as (end-begin)
+- updates hbID average as ((curavg*N)+duration)/(N+1)
+- increments hbID count (to N+1)
+
+Sampling resets average and count to 0
+- must be mutexed
+- sampling is two values: current count, current average duration
+- might be useful to have variance, too
+- might be useful to have bad data threshold
+
+------------------------------------------------------------------
+
+Heartbeat as impulse function w/ average time since last HB (any ID)
+
+ldms_heartbeat(heartbeatID)
+- take current timestamp
+- calc HB interval duration as (current-timestamp - last-HB-timestamp)
+- updates hbID interval average as ((curavg*N)+duration)/(N+1)
+- update hbID count to N+1
+- set last-HB-timestamp to current timestamp
+
+Sampling resets average and count to 0
+
+
