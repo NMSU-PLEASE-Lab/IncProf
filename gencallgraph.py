@@ -2,13 +2,14 @@
 
 #
 # Generate call graph data from gprof call graph table
-# Usage: gencov.py <gprof-output-filename>
+# and flat profile
+# Usage: gencallgraph.py <gprof-text-output-filename>
 
 #
 # This script calculates a call graph from the table that gprof
 # outputs
 #
-# TODO: optional output in JSON format
+# TODO: optional output to JSON format
 # TODO: keep global structure of edges, too (maybe?)
 
 import re;
@@ -16,28 +17,37 @@ import sys;
 import os;
 import glob;
 
-flatProfileData = {}
+#
+# Top level object for a call graph
+#
+class CallGraph(object):
+   def __init__(self):
+      # place to hold flat profile data until nodes are set up
+      self.flatProfileData = {}
+      # keep table of all objects, index is function ID (# assigned by gprof)
+      # "<spontaneous>" is ID 0
+      self.nodeTable = {}
 
 #
 # Node in call graph is a function
 # - keeps stats, and lists of edges to callers and callees
 # 
 class Node(object):
-   # keep table of all objects, index is function ID
    nodeTable = {}
-   def __init__(self,name,fid,totTimePct,selfTime,totTime,numCalls):
+   def __init__(self,cg,name,fid,totTimePct,selfTime,totTime,numCalls):
+      self.cg = cg  # call graph that we are part of
       self.name = name
       self.id = fid
-      self.totTimePct = totTimePct
-      self.selfTime = selfTime
-      self.totTime = totTime
-      self.numCalls = numCalls
+      self.totTimePct = totTimePct # from CG, %time column
+      self.selfTime = selfTime     # from CG, self column (== flat self?)
+      self.totTime = totTime       # from CG, self+children?
+      self.numCalls = numCalls     # from CG, called (== flat calls?)
       self.callerEdges = []
       self.childEdges = []
       self.minDepth = -1
-      if fid in Node.nodeTable:
+      if fid in cg.nodeTable:
          print("Error: function with ID {0} already exists".format(fid))
-      Node.nodeTable[fid] = self
+      cg.nodeTable[fid] = self
    # update function if it already has an object
    def update(self,totTimePct,selfTime,totTime,numCalls):
       self.totTimePct = totTimePct
@@ -46,11 +56,11 @@ class Node(object):
       self.numCalls = numCalls
    # update data from flat profile
    def updateFlatData(self,flatData):
-      print("Update flat data")
+      print("Update from flat data")
    # print info of this function
    def printMe(self):
       print("Node: {0} {1}".format(self.id, self.name))
-      print("  stats: {0} {1} {2} {3}".format(self.totTimePct, self.selfTime, self.totTime, self.numCalls))
+      print("  stats: tot%:{0} self:{1} tot:{2} calls:{3}".format(self.totTimePct, self.selfTime, self.totTime, self.numCalls))
       print("  depth: {0}".format(self.getMinDepth()))
       print("  callers:")
       for e in self.callerEdges:
@@ -80,25 +90,25 @@ class Node(object):
 # - will eventually keep more stats
 #
 class Edge(object):
-   def __init__(self,callerId,calleeId,numCalls,totCalls):
-      callee = Node.nodeTable[calleeId]
-      if callee == None:
+   def __init__(self,cg,callerId,calleeId,numCalls,totCalls):
+      self.cg = cg
+      self.callee = cg.nodeTable[calleeId]
+      if self.callee == None:
          print("Error: no callee for edge")
-      caller = Node.nodeTable[callerId]
-      if caller == None:
+      self.caller = cg.nodeTable[callerId]
+      if self.caller == None:
          print("Error: no callee for edge")
-      self.caller = caller
-      self.callee = callee
-      callee.callerEdges.append(self)
-      caller.childEdges.append(self)
+      #self.caller = caller
+      #self.callee = callee
+      self.callee.callerEdges.append(self)
+      self.caller.childEdges.append(self)
       self.numCalls = numCalls
-      if callee.numCalls != totCalls:
+      if self.callee.numCalls != totCalls:
          print("Error: callee numCalls not equal to totCalls: {0} {1}".
-                                              format(callee.numCalls,totCalls))
+                      format(self.callee.numCalls,totCalls))
    # print method
    def printMe(self,space):
-      print("{0}from {1} to {2} count {3}".format(space, self.caller.id, 
-                                                self.callee.id, self.numCalls))
+      print("{0}from {1}:{4} to {2}:{5} count {3}".format(space, self.caller.id, self.callee.id, self.numCalls, self.caller.name, self.callee.name))
 
 #
 # Read gprof table and create call graph objects
@@ -108,30 +118,32 @@ def createProfileGraph(filename):
    inCGTable = False
    inFlatTable = False
    inf = open(filename)
+   cgraph = CallGraph()
    while True:
       line = inf.readline()
       if inFlatTable:
          if len(line) < 2:
             inFlatTable = False
             continue
-         processFlatProfileLine(line)
+         processFlatProfileLine(line, cgraph)
       if inCGTable:
          if len(line) < 2:
             inCGTable = False
             break
-         processCallGraphSection(line, inf)
+         processCallGraphSection(line, inf, cgraph)
       if line.find("time   seconds   seconds    calls") > 0:
          inFlatTable = True
          continue
       if None != re.match("index\s+%\s+time\s+self\s+children\s+called",line):
          inCGTable = True
          print("In CG Table")
+   return cgraph
 
 #
 # Process a call graph section
 # - incoming line is first line in section
 #
-def processCallGraphSection(line, fileh):
+def processCallGraphSection(line, fileh, cgraph):
    haveCaller = False
    haveFunction = False
    needLine = False
@@ -212,18 +224,18 @@ def processCallGraphSection(line, fileh):
          haveCaller = False
          haveFunction = False
          if not callerId in Node.nodeTable:
-            n = Node(callerName,callerId,0,0,0,0)
+            n = Node(cgraph,callerName,callerId,0,0,0,0)
          if not funcId in Node.nodeTable:
-            n = Node(funcName,funcId,funcTotTimePct,funcSelfTime,0,funcNumCalls)
+            n = Node(cgraph,funcName,funcId, funcTotTimePct, funcSelfTime, funcChildrenTime, funcNumCalls)
          else:
             n = Node.nodeTable[funcId]
-            n.update(funcTotTimePct, funcSelfTime, 0, funcNumCalls)
-         if funcName in flatProfileData:
-            n.updateFlatData(flatProfileData)
-         c = Edge(callerId,funcId,callerNumCalls,callerTotCalls)
+            n.update(funcTotTimePct, funcSelfTime, funcChildrenTime, funcNumCalls)
+         if funcName in cgraph.flatProfileData:
+            n.updateFlatData(cgraph.flatProfileData)
+         c = Edge(cgraph,callerId,funcId,callerNumCalls,callerTotCalls)
          # do not set needLine since we'll return to caller after this
 
-def processFlatProfileLine(line):
+def processFlatProfileLine(line, cgraph):
    # line is either a full data line or a "short" line
    print("flat line: {0}".format(line),end="")
    # try to match full line first
@@ -247,18 +259,18 @@ def processFlatProfileLine(line):
    else:
       fcalls = 0
       funcName = v.group(4)
-   if funcName in flatProfileData:
+   if funcName in cgraph.flatProfileData:
       print("Error: function already in flat profile: {0}".format(funcName))
-   flatProfileData[funcName] = (fpct,fstime,fcalls)
+   cgraph.flatProfileData[funcName] = (fpct,fstime,fcalls)
    return True
 
 #
 # Main
 #
-createProfileGraph(sys.argv[1])      
+cgraph = createProfileGraph(sys.argv[1])      
 
-for n in Node.nodeTable:
-   node = Node.nodeTable[n]
+for n in cgraph.nodeTable:
+   node = cgraph.nodeTable[n]
    node.printMe()
 
 exit(0)
