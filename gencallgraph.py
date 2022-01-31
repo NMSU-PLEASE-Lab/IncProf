@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+#---------------------------------------------------------------------
 #
 # Generate call graph data from gprof call graph table
 # and flat profile
@@ -11,23 +11,25 @@
 # outputs, along with data on each function
 #
 # TODO: optional output to JSON format
-# TODO: keep global structure of edges, too (maybe?)
+#---------------------------------------------------------------------
 
 import re
 import sys
 import os
 import glob
 import argparse
+import copy
+import math
 
 debug = False
 doDot = False
 maxDepth = 20
 
-#
+#---------------------------------------------------------------------
 # Top level object for a call graph
 # reason: we will extend to read in multiple profiles (from intervals),
 #         so each one will be represented by a CallGraph object
-#
+#---------------------------------------------------------------------
 class CallGraph(object):
    callgraphID = 1
    # constructor
@@ -75,12 +77,37 @@ class CallGraph(object):
       for nid in self.nodeTable:
          node = self.nodeTable[nid]
          print('{0}:{1}'.format(node.id, node.name))
-      
+   #
+   # merge another call graph's data into this one
+   #
+   def mergeCallGraphs(self,othercg):
+      for nid in othercg.nodeTable:
+         onode = othercg.nodeTable[nid]
+         snode = None
+         if nid in self.nodeTable and onode.name == self.nodeTable[nid].name:
+            snode = self.nodeTable[nid]
+         else:
+            for sid in self.nodeTable:
+               if onode.name == self.nodeTable[sid].name:
+                  snode = self.nodeTable[sid]
+                  break
+         if snode is None:
+            continue
+         # now merge stats from onode into snode
+         snode.mergeNodeData(onode)
+      # what do we do about edges?
+   #
+   # apply the merge factor to any percentages
+   # 
+   def applyMergeFactor(self, factor):
+      for nid in self.nodeTable:
+         node = self.nodeTable[nid]
+         node.totTimePct = node.totTimePct / float(factor)
 
-#
+#---------------------------------------------------------------------
 # Node: a node in call graph, represents a function
 # - keeps stats, and lists of edges to callers and callees
-# 
+#---------------------------------------------------------------------
 class Node(object):
    # constructor
    def __init__(self,cg,name,fid,totTimePct,selfTime,totTime,numCalls):
@@ -134,11 +161,17 @@ class Node(object):
       else:
          self.minDepth = d + 1
       return self.minDepth
+   def mergeNodeData(self, other):
+      # just add pcts for now, factor will be applied later
+      self.totTimePct = self.totTimePct + other.totTimePct
+      self.selfTime = self.selfTime + other.selfTime
+      self.totTime = self.totTime + other.totTime
+      self.numCalls = self.numCalls + other.numCalls
 
-#
+#---------------------------------------------------------------------
 # Edge objects keep connections between functions
 # - will eventually keep more stats
-#
+#---------------------------------------------------------------------
 class Edge(object):
    edgeID = 1
    # constructor
@@ -167,10 +200,10 @@ class Edge(object):
          self.caller.id, self.callee.id, self.numCalls, self.caller.name,
          self.callee.name))
 
-#
+#---------------------------------------------------------------------
 # Read gprof table and create call graph objects
 # param filename is the filename that the gprof output exists in
-#
+#---------------------------------------------------------------------
 def createProfileGraph(filename,id):
    inCGTable = False    # true when we are processing DG data lines
    inFlatTable = False  # true when we are processing flat data lines
@@ -203,11 +236,11 @@ def createProfileGraph(filename,id):
          if debug: print("In CG Table")
    return cgraph
 
-#
+#---------------------------------------------------------------------
 # Process a call graph section
 # - incoming line is first line in section (a caller line)
 # - sections have caller lines, the function, then callees
-#
+#---------------------------------------------------------------------
 def processCallGraphSection(line, fileh, cgraph):
    haveCaller = False
    haveFunction = False
@@ -306,10 +339,10 @@ def processCallGraphSection(line, fileh, cgraph):
          c = Edge(cgraph,callerId,funcId,callerNumCalls,callerTotCalls)
          # do not set needLine since we'll return to caller after this
 
-#
+#---------------------------------------------------------------------
 # Process one line in the flat profile data section
 # - lines are either full data lines or partial (short) data lines
-#
+#---------------------------------------------------------------------
 def processFlatProfileLine(line, cgraph):
    # line is either a full data line or a "short" line
    if debug: print("flat line: {0}".format(line),end="")
@@ -338,6 +371,34 @@ def processFlatProfileLine(line, cgraph):
       print("Error: function already in flat profile: {0}".format(funcName))
    cgraph.flatProfileData[funcName] = (fpct,fstime,fcalls)
    return True
+
+#---------------------------------------------------------------------
+# Reduce a collection of call graphs by some factor N, done by
+# coalescing N sequential call graphs
+#---------------------------------------------------------------------
+def reduceCGSequence(cgs, factor):
+   newcgs = {}
+   newcgid = 1
+   count = 0
+   print("reduce {0} graphs...".format(len(cgs)))
+   for cgi in cgs:
+      if count == 0:
+         # start out new reduction call graph
+         print("start a new graph")
+         cg = copy.deepcopy(cgs[cgi])
+         newcgs[newcgid] = cg
+         newcgid= newcgid + 1
+         count = count + 1
+         continue
+      # add in the next call graph
+      cg.mergeCallGraphs(cgs[cgi])
+      count = count + 1
+      if count == factor:
+         cg.applyMergeFactor(factor)
+         count = 0
+   if count > 0:
+      cg.applyMergeFactor(count+1)
+   return newcgs
 
 #---------------------------------------------------------------------
 # Main
@@ -407,6 +468,13 @@ else:
    for i in range(maxind):
       if debug: print(cgs[i+1])
       cgs[i+1].outputLibSVMLine()
+   print("----")
+   factor = 2
+   cgs = reduceCGSequence(cgs, factor)
+   for i in range(math.ceil(maxind/factor)):
+      if debug: print(cgs[i+1])
+      cgs[i+1].outputLibSVMLine()
+   print("----")
    cgraph.outputFunctionMap()
 
 exit(0)
