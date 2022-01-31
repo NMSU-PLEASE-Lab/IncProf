@@ -21,6 +21,7 @@ import argparse
 
 debug = False
 doDot = False
+maxDepth = 20
 
 #
 # Top level object for a call graph
@@ -30,7 +31,7 @@ doDot = False
 class CallGraph(object):
    callgraphID = 1
    # constructor
-   def __init__(self):
+   def __init__(self,id):
       # place to hold flat profile data until nodes are set up
       self.flatProfileData = {}
       # keep table of all objects, index is function ID (# assigned by gprof)
@@ -38,8 +39,9 @@ class CallGraph(object):
       self.nodeTable = {}
       # keep edges, but what is edge ID?
       self.edgeTable = {}
-      self.id = CallGraph.callgraphID
-      CallGraph.callgraphID = CallGraph.callgraphID + 1
+      self.id = id
+      #self.id = CallGraph.callgraphID
+      #CallGraph.callgraphID = CallGraph.callgraphID + 1
    # Output a Dot-formatted representation of the profiled call graph
    def outputDot(self):
       print("digraph {")
@@ -60,9 +62,20 @@ class CallGraph(object):
       print("{0}".format(self.id), end="")
       for nid in self.nodeTable:
          node = self.nodeTable[nid]
+         if node.minDepth < 0: 
+            node.getMinDepth()
+         if node.minDepth > maxDepth: continue
          print(' {0}:{1}'.format(node.id,
                node.selfTime+node.totTime), end="")
-      print("")      
+      print("")
+   #
+   # Output a function id->name mapping
+   #
+   def outputFunctionMap(self):
+      for nid in self.nodeTable:
+         node = self.nodeTable[nid]
+         print('{0}:{1}'.format(node.id, node.name))
+      
 
 #
 # Node: a node in call graph, represents a function
@@ -158,12 +171,12 @@ class Edge(object):
 # Read gprof table and create call graph objects
 # param filename is the filename that the gprof output exists in
 #
-def createProfileGraph(filename):
+def createProfileGraph(filename,id):
    inCGTable = False    # true when we are processing DG data lines
    inFlatTable = False  # true when we are processing flat data lines
    inf = open(filename)
    # TODO error handling here
-   cgraph = CallGraph()
+   cgraph = CallGraph(id)
    while True:
       line = inf.readline()
       if inFlatTable:
@@ -210,7 +223,7 @@ def processCallGraphSection(line, fileh, cgraph):
       if not haveCaller:
          # match line like "                   <spontaneous>"
          if None != re.match("\s+<spontaneous>",line):
-            callerName = "<spontaneous>"
+            callerName = "_spontaneous_"
             callerId = 0
             callerSelfTime = 0.0
             callerChildTime = 0.0
@@ -332,6 +345,7 @@ def processFlatProfileLine(line, cgraph):
 argParser = argparse.ArgumentParser(description='Gprof data manipulator')
 argParser.add_argument('--debug', action='store_true', help='turn on debugging info (default off)')
 argParser.add_argument('--dot', action='store_true', help='output Dot graph format (default: off)')
+argParser.add_argument('--depth', action='store', type=int, default=20, help='limit function call depth (default 20)')
 argParser.add_argument('--text', action='store', default='gprof.txt', metavar='<gprof-report-file>', help='filename of text gprof report')
 argParser.add_argument('--bin', action='store', nargs=2, metavar='<filename>', help='invoke gprof on <exectuable gmon.out> pair')
 argParser.add_argument('--bindir', action='store', nargs=2, metavar='<name>', help='invoke gprof on all profiles in <exectuable directory> pair')
@@ -339,6 +353,7 @@ args = argParser.parse_args()
 debug = args.debug
 doDot = args.dot
 textFile = args.text
+maxDepth = args.depth
 
 if args.bindir is None:
    #
@@ -366,21 +381,33 @@ else:
    #
    # Directory full of profile data (binary)
    #
+   cgs = {}
+   maxind = 0
    sd = os.scandir(args.bindir[1])
    for f in sd:
       if not f.is_file(): continue
+      v = re.match(".*(\d+)",f.name)
+      if v is None:
+         print("filename {0} does not end with a number".format(f.name))
+         continue
+      ind = int(v.group(1))
       proFile = "{0}/{1}".format(args.bindir[1],f.name)
       textFile = "{0}.txt".format(proFile)
       if debug: print("do gprof report generation ({0})".format(proFile))
       os.system("gprof {0} {1} > {2}".format(args.bindir[0], proFile, 
                 textFile))
-      cgraph = createProfileGraph(textFile)
+      cgraph = createProfileGraph(textFile,ind)
       os.system("rm -f {0}".format(textFile))
-      cgraph.outputLibSVMLine()
+      cgs[ind] = cgraph
+      if ind > maxind: maxind = ind
       # default action: print nodes in call graph
       #for n in cgraph.nodeTable:
       #   node = cgraph.nodeTable[n]
       #   node.printMe()
+   for i in range(maxind):
+      if debug: print(cgs[i+1])
+      cgs[i+1].outputLibSVMLine()
+   cgraph.outputFunctionMap()
 
 exit(0)
 
