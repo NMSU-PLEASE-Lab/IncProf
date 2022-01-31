@@ -145,7 +145,7 @@ def findOptKElbow(clParams):
       # scaled by lower (and probably bigger) one, then times
       # loglog of the # of clusters (1-log seemed too much)
       if d1 <= 0:
-		continue
+         continue
       dd = ((d1 - d2) / d1) * math.log(math.log(i+1)+1)
       # try only accepting new if greater than 20% improvement
       if dd > maxd*1.2:
@@ -244,10 +244,10 @@ for j in range(0,len(cld[0])):
 
       # Print the the elbowk cluster elements vertically
       if i == (elbowk[0] - 1):
-	      felbowk.write("{0},{1}\n".format(j, cld[i][j]))
+         felbowk.write("{0},{1}\n".format(j, cld[i][j]))
       # Print the the bestk cluster elements vertically
       if i == (bestk[0] - 1):
-	      fbestk.write("{0},{1}\n".format(j, cld[i][j]))
+         fbestk.write("{0},{1}\n".format(j, cld[i][j]))
    print
 
 felbowk.close()
@@ -273,10 +273,11 @@ for c in centroids[bestk[0]-1]:
    normalize(c)
    for f in range(len(c)):
       if c[f] > 0.00099:
-
-	 # search if the function exist in other clusters
-	 # TODO: find a better way to do it
-         r = 1
+   # search if the function exist in other clusters
+   # TODO: find a better way to do it
+   # JEC: why is this comment between the if stmt and r=1????
+        r = 1
+   # JEC TODO: I have no idea the proper indentation below here (w/ tabs)
 	 ex_list = [] #exist in other cluster list
 	 for c1 in centroids[bestk[0]-1]:
 	    normalize(c1)
@@ -311,7 +312,7 @@ for c in centroids[elbowk[0]-1]:
                ex_list.append(r-1) # add the cluster number
                #print "ex_list:", ex_list
             r += 1
-
+#JEC TODO: what is the indentation of the line below????
 	 m = int(f/10)
          if idmap != None and m in idmap:
             print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m],ex_list)
