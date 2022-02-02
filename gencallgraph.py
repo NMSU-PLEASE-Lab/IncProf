@@ -150,6 +150,16 @@ def processCallGraphSection(line, fileh, cgraph):
             funcChildrenTime = float(v.group(4))
             funcNumCalls = int(v.group(5))
             done = True
+         # line like "[1]     47.9    1.04    0.00  308963+8       unsign..."
+         v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)\+(\d+)\s+(.+) \[(\d+)\]",line)
+         if v is not None and done is not True:
+            funcName = v.group(7)
+            funcId = int(v.group(1))
+            funcTotTimePct = 0.0
+            funcSelfTime = float(v.group(2))
+            funcChildrenTime = float(v.group(3))
+            funcNumCalls = int(v.group(5))
+            done = True
          # line like "[1]     95.9    0.00    0.47                 main [1]"
          v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(.+) \[(\d+)\]",line)
          if v is not None and done is not True:
@@ -169,16 +179,6 @@ def processCallGraphSection(line, fileh, cgraph):
             funcSelfTime = float(v.group(2))
             funcChildrenTime = float(v.group(3))
             funcNumCalls = 0
-            done = True
-         # line like "[1]     47.9    1.04    0.00  308963+8       unsign..."
-         v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)\+(\d+)\s+(.+) \[(\d+)\]",line)
-         if v is not None and done is not True:
-            funcName = v.group(6)
-            funcId = int(v.group(1))
-            funcTotTimePct = 0.0
-            funcSelfTime = float(v.group(2))
-            funcChildrenTime = float(v.group(3))
-            funcNumCalls = int(v.group(4))
             done = True
          if debug: print("Function: {0} {1} {2} {3} {4} {5}".format(funcName, 
                   funcId, funcTotTimePct, funcSelfTime, funcChildrenTime,

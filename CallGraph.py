@@ -7,7 +7,7 @@ doDot = False
 maxDepth = 20
 
 def cleanName(name):
-   trs = {32:95, 60:95, 62:95, 38:95, 42:95}
+   trs = {32:95, 60:95, 62:95, 38:95, 42:95, 44:95, 58:95, 40:95, 41:95}
    return (name.translate(trs))[:30]
 
 
