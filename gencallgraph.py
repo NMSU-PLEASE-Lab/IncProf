@@ -68,9 +68,11 @@ def createProfileGraph(filename,id):
 # - sections have caller lines, the function, then callees
 #---------------------------------------------------------------------
 def processCallGraphSection(line, fileh, cgraph):
-   haveCaller = False
-   haveFunction = False
+   isCallerLine = False
+   isFunctionLine = False
+   isCalleeLine = False
    needLine = False
+   callers = []
    if debug: print("CG first line: {0}".format(line), end='')
    # a horizontal line separator indicates end of section
    while line.find("------------") < 0:
@@ -78,81 +80,135 @@ def processCallGraphSection(line, fileh, cgraph):
          line = fileh.readline()
          needLine = False
       if debug: print("CG processing line: {0}".format(line), end='')
+      # line beginning with "[#]" is the current function; lines before
+      # it are callers, lines after are callees; logic below handles this
+      if line[0] == '[':
+         isFunctionLine = True
+         isCallerLine = False
+         isCalleeLine = False
+      else:
+         if isFunctionLine is False and isCalleeLine is False:
+            isCallerLine = True
+         else:
+            isFunctionLine = False
+            isCalleeLine = True
+            isCallerLine = False   # should already be
+         if line.find("------------") == 0:
+            isCalleeLine = False
+      if debug: print("Line flags are: {0} {1} {2}".format(isCallerLine, isFunctionLine, isCalleeLine))
       # First line in section is the callee, or "<spontaneous>"
-      if not haveCaller:
+      if isCallerLine:
+         if debug: print("process caller line")
+         caller = {}
+         done = False
          # match line like "                   <spontaneous>"
          if None != re.match("\s+<spontaneous>",line):
-            callerName = "_spontaneous_"
-            callerId = 0
-            callerSelfTime = 0.0
-            callerChildTime = 0.0
-            callerNumCalls = 0
-            callerTotCalls = 0
+            caller['name'] = "_spontaneous_"
+            caller['id'] = 0
+            caller['selftime'] = 0.0
+            caller['childtime'] = 0.0
+            caller['numcalls'] = 0
+            caller['totcalls'] = 0
+            done = True
          # match line like "          0.02    0.22      10/10          main [1]"
-         else:
-            v = re.match("\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)/(\d+)\s+(\S+)\s+\[(\d+)\]",line)
-            callerName = v.group(5)
-            callerId = int(v.group(6))
-            callerSelfTime = float(v.group(1))
-            callerChildTime = float(v.group(2))
-            callerNumCalls = int(v.group(3))
-            callerTotCalls = int(v.group(4))
-         if debug: print("Caller: {0} {1} {2} {3} {4} {5}".format(callerName,
-              callerId, callerSelfTime, callerChildTime, callerNumCalls,
-              callerTotCalls))
-         haveCaller = True
+         v = re.match("\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)/(\d+)\s+(.+) \[(\d+)\]",line)
+         if v is not None and done is not True:
+            caller['name'] = v.group(5)
+            caller['id'] = int(v.group(6))
+            caller['selftime'] = float(v.group(1))
+            caller['childtime'] = float(v.group(2))
+            caller['numcalls'] = int(v.group(3))
+            caller['totcalls'] = int(v.group(4))
+            done = True
+         # match line of just num-calls and func name and id
+         v = re.match("\s+(\d+)\s+(.+) \[(\d+)\]",line)
+         if v is not None and done is not True:
+            caller['name'] = v.group(2)
+            caller['id'] = int(v.group(3))
+            caller['selftime'] = 0.0
+            caller['childtime'] = 0.0
+            caller['numcalls'] = int(v.group(1))
+            caller['totcalls'] = int(v.group(1))
+            done = True
+         if debug: print("Caller: {0} {1} {2} {3} {4} {5}".format(caller['name'],
+              caller['id'], caller['selftime'], caller['childtime'], caller['numcalls'],
+              caller['totcalls']))
+         callers.append(caller)
          needLine = True
          continue
-      # Second line in section must be this function; will be missing numcalls
-      # if from spontaneous
-      if not haveFunction:
+      # Handle the line that is this function's callgraph info
+      elif isFunctionLine:
+         if debug: print("process function line")
+         done = False
          # match line like "[2]     49.0    0.02    0.22      10         p1g [2]"
-         v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)\s+(\S+)",line)
-         if v != None: # and len(v.group) == 6:
+         v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)\s+(.+) \[(\d+)\]",line)
+         if v is not None: # and len(v.group) == 6:
             funcName = v.group(6)
             funcId = int(v.group(1))
             funcTotTimePct = float(v.group(2))
             funcSelfTime = float(v.group(3))
             funcChildrenTime = float(v.group(4))
             funcNumCalls = int(v.group(5))
-         else:
-            # line like "[1]     95.9    0.00    0.47                 main [1]"
-            v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\S+)",line)
+            done = True
+         # line like "[1]     95.9    0.00    0.47                 main [1]"
+         v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(.+) \[(\d+)\]",line)
+         if v is not None and done is not True:
             funcName = v.group(5)
             funcId = int(v.group(1))
             funcTotTimePct = float(v.group(2))
             funcSelfTime = float(v.group(3))
             funcChildrenTime = float(v.group(4))
             funcNumCalls = 0
+            done = True
+         # line like "[1]            0.00    0.47      3/8          main [1]"
+         v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)/(\d+)\s+(.+) \[(\d+)\]",line)
+         if v is not None and done is not True:
+            funcName = v.group(6)
+            funcId = int(v.group(1))
+            funcTotTimePct = 0.0
+            funcSelfTime = float(v.group(2))
+            funcChildrenTime = float(v.group(3))
+            funcNumCalls = 0
+            done = True
+         # line like "[1]     47.9    1.04    0.00  308963+8       unsign..."
+         v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)\+(\d+)\s+(.+) \[(\d+)\]",line)
+         if v is not None and done is not True:
+            funcName = v.group(6)
+            funcId = int(v.group(1))
+            funcTotTimePct = 0.0
+            funcSelfTime = float(v.group(2))
+            funcChildrenTime = float(v.group(3))
+            funcNumCalls = int(v.group(4))
+            done = True
          if debug: print("Function: {0} {1} {2} {3} {4} {5}".format(funcName, 
                   funcId, funcTotTimePct, funcSelfTime, funcChildrenTime,
                   funcNumCalls))
-         haveFunction = True
          needLine = True
          continue
-      # Rest of lines in section are children, until dash separator line
-      # like "                0.02    0.22      10/10          p1g [2]"
-      v = re.match("\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)/(\d+)\s+(\S+)\s+\[(\d+)\]",line)
-      if v != None:
-         # we extract the child info and print it, but don't do anything else
-         # with it for now, but maybe in the future
-         childName = v.group(5)
-         childId = int(v.group(6))
-         childSelfTime = float(v.group(1))
-         childChildrenTime = float(v.group(2))
-         childNumCalls = int(v.group(3))
-         childTotCalls = int(v.group(4))
-         if debug: print("Child: {0} {1} {2} {3} {4} {5}".format(childName, 
-             childId, childSelfTime, childChildrenTime, childNumCalls,
-             childTotCalls))
+      elif isCalleeLine:
+         if debug: print("process callee line")
+         # Rest of lines in section are children, until dash separator line
+         # like "                0.02    0.22      10/10          p1g [2]"
+         v = re.match("\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)/(\d+)\s+(.+) \[(\d+)\]",line)
+         if v != None:
+            # we extract the child info and print it, but don't do anything else
+            # with it for now, but maybe in the future
+            childName = v.group(5)
+            childId = int(v.group(6))
+            childSelfTime = float(v.group(1))
+            childChildrenTime = float(v.group(2))
+            childNumCalls = int(v.group(3))
+            childTotCalls = int(v.group(4))
+            if debug: print("Child: {0} {1} {2} {3} {4} {5}".format(childName, 
+                childId, childSelfTime, childChildrenTime, childNumCalls,
+                childTotCalls))
          needLine = True
       else:  # must be end of section
-         if debug: print("do end of section")
+         if debug: print("do end of section {0}".format(line))
          # for now, ignore child info (not saved anyways)
-         haveCaller = False
-         haveFunction = False
-         if not callerId in cgraph.nodeTable:
-            n = cg.Node(cgraph,callerName,callerId,0,0,0,0)
+         isCallerLine = False
+         isFunctionLine = False
+         isCalleeLine = False
          if not funcId in cgraph.nodeTable:
             n = cg.Node(cgraph,funcName,funcId, funcTotTimePct, funcSelfTime,
                      funcChildrenTime, funcNumCalls)
@@ -162,7 +218,10 @@ def processCallGraphSection(line, fileh, cgraph):
                      funcNumCalls)
          if funcName in cgraph.flatProfileData:
             n.updateFlatData(cgraph.flatProfileData)
-         c = cg.Edge(cgraph,callerId,funcId,callerNumCalls,callerTotCalls)
+         for caller in callers:
+            if not caller['id'] in cgraph.nodeTable:
+               n = cg.Node(cgraph,caller['name'],caller['id'],0,0,0,0)
+            c = cg.Edge(cgraph,caller['id'],funcId,caller['numcalls'],caller['totcalls'])
          # do not set needLine since we'll return to caller after this
 
 #---------------------------------------------------------------------
@@ -252,7 +311,7 @@ if args.bindir is None:
       os.system("gprof {0} {1} > {2}".format( args.bin[0], args.bin[1],
                 textFile))
 
-   cgraph = createProfileGraph(textFile)
+   cgraph = createProfileGraph(textFile,1)
 
    if doDot:
       cgraph.outputDot()

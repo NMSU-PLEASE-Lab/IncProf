@@ -6,6 +6,11 @@ debug = False
 doDot = False
 maxDepth = 20
 
+def cleanName(name):
+   trs = {32:95, 60:95, 62:95, 38:95, 42:95}
+   return (name.translate(trs))[:30]
+
+
 #---------------------------------------------------------------------
 # Top level object for a call graph
 # reason: we will extend to read in multiple profiles (from intervals),
@@ -100,7 +105,7 @@ class Node(object):
    #
    def __init__(self,cg,name,fid,totTimePct,selfTime,totTime,numCalls):
       self.cg = cg  # call graph that we are part of
-      self.name = name
+      self.name = cleanName(name)
       self.id = fid
       self.totTimePct = totTimePct # from CG, %time column
       self.selfTime = selfTime     # from CG, self column (== flat self?)
@@ -147,7 +152,10 @@ class Node(object):
       if self.minDepth >= 0:  # already calculated
          return self.minDepth;
       curDepth = 9999999
+      if self.minDepth == -2:
+         return curDepth
       d = curDepth
+      self.minDepth = -2  # marker for already in recursion
       for e in self.callerEdges:
          d = e.caller.getMinDepth()
          if d < curDepth:
