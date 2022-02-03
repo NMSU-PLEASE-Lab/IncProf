@@ -8,7 +8,7 @@ maxDepth = 20
 
 def cleanName(name):
    trs = {32:95, 60:95, 62:95, 38:95, 42:95, 44:95, 58:95, 40:95, 41:95}
-   return (name.translate(trs))[:30]
+   return (name.translate(trs))
 
 
 #---------------------------------------------------------------------
@@ -22,8 +22,10 @@ class CallGraph(object):
    # constructor
    #
    def __init__(self,id):
+      self.functionTimeThreshold = 0.01
       # place to hold flat profile data until nodes are set up
       self.flatProfileData = {}
+      self.totalExecutionTime = 0.001  # avoid divide by zero?
       # keep table of all objects, index is function ID (# assigned by gprof)
       # "<spontaneous>" is ID 0
       self.nodeTable = {}
@@ -39,12 +41,12 @@ class CallGraph(object):
       print("digraph {")
       for nid in self.nodeTable:
          node = self.nodeTable[nid]
-         print('{0} [label="{0}\\n{1}"]'.format(node.name, 
+         print('{0} [label="{0}\\n{1}"]'.format(node.name[:30], 
                node.selfTime+node.totTime))
       for eid in self.edgeTable:
          edge = self.edgeTable[eid]
-         print('{0}->{1} [label="{2}"]'.format(edge.caller.name,
-               edge.callee.name, edge.numCalls))
+         print('{0}->{1} [label="{2}"]'.format(edge.caller.name[:30],
+               edge.callee.name[:30], edge.numCalls))
       print("}")
    #
    # Output graph info in one libsvm-formatted data line
@@ -134,7 +136,7 @@ class Node(object):
    # print info of this function
    #
    def printMe(self):
-      print("Node: {0} {1}".format(self.id, self.name))
+      print("Node: {0} {1}".format(self.id, self.name[:40]))
       print("  stats: tot%:{0} self:{1} tot:{2} calls:{3}".format(
          self.totTimePct, self.selfTime, self.totTime, self.numCalls))
       print("  depth: {0}".format(self.getMinDepth()))
@@ -198,9 +200,10 @@ class Edge(object):
       self.callee.callerEdges.append(self)
       self.caller.childEdges.append(self)
       self.numCalls = numCalls
-      if self.callee.numCalls != totCalls:
-         print("Error: callee numCalls not equal to totCalls: {0} {1}".
-                      format(self.callee.numCalls,totCalls))
+      # not sure about this...is printing on valid data?
+      #if self.callee.numCalls != totCalls:
+      #   print("Error: callee numCalls not equal to totCalls: {0} {1}".
+      #                format(self.callee.numCalls,totCalls))
       self.id = Edge.edgeID
       Edge.edgeID = Edge.edgeID + 1
       cg.edgeTable[self.id] = self
@@ -208,8 +211,8 @@ class Edge(object):
    # print method
    #
    def printMe(self,space):
-      print("{0}from {1}:{4} to {2}:{5} count {3}".format(space,
-         self.caller.id, self.callee.id, self.numCalls, self.caller.name,
-         self.callee.name))
+      print("{0}count {3} from {1}:{4}\n{0}           to {2}:{5}".format(space,
+         self.caller.id, self.callee.id, self.numCalls, self.caller.name[:40],
+         self.callee.name[:40]))
 
 

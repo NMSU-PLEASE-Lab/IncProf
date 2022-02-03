@@ -209,6 +209,10 @@ def processCallGraphSection(line, fileh, cgraph):
          isCallerLine = False
          isFunctionLine = False
          isCalleeLine = False
+         # limit function nodes to only those above a threshhold
+         # TODO needs more work, and generalization
+         if (funcSelfTime+funcChildrenTime) / cgraph.totalExecutionTime < cgraph.functionTimeThreshold:
+            continue
          if not funcId in cgraph.nodeTable:
             n = cg.Node(cgraph,funcName,funcId, funcTotTimePct, funcSelfTime,
                      funcChildrenTime, funcNumCalls)
@@ -229,6 +233,7 @@ def processCallGraphSection(line, fileh, cgraph):
 # - lines are either full data lines or partial (short) data lines
 #---------------------------------------------------------------------
 def processFlatProfileLine(line, cgraph):
+   totalExecutionTime = 0.0
    # line is either a full data line or a "short" line
    if debug: print("flat line: {0}".format(line),end="")
    # try to match full line first
@@ -243,7 +248,7 @@ def processFlatProfileLine(line, cgraph):
       print("Unknown flat profile line: {0}".format(line), end='')
       return False
    fpct = float(v.group(1))
-   fttime = float(v.group(2))
+   totalExecutionTime = float(v.group(2))  # last line will be final total
    fstime = float(v.group(3))
    if short == 0:
       fcalls = int(v.group(4))
@@ -255,6 +260,7 @@ def processFlatProfileLine(line, cgraph):
    if funcName in cgraph.flatProfileData:
       print("Error: function already in flat profile: {0}".format(funcName))
    cgraph.flatProfileData[funcName] = (fpct,fstime,fcalls)
+   cgraph.totalExecutionTime = totalExecutionTime
    return True
 
 #---------------------------------------------------------------------
