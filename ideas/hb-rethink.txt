@@ -12,14 +12,21 @@ For example, Gadget2 has a (simplified) main loop that looks like:
 
   do				/* main loop */
     {
+      ldms_hb(1);
       find_next_sync_point_and_drift();	/* find next synchronization 
                                  point and drift particles to this time. */
+      ldms_hb(2);
       domain_Decomposition();	/* do domain decomposition if needed */
+      other_code();
+      ldms_hb(3);
       compute_accelerations(0);	/* compute accelerations for 
 				 * the particles that are to be advanced   */
+      other_code();
+      ldms_hb(4);
       advance_and_find_timesteps();	/* 'kick' active particles in
 					 * momentum space and compute new
 					 * timesteps for them		 */
+      other_code();
       All.NumCurrentTiStep++;
 	}
 
