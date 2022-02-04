@@ -65,7 +65,8 @@ class CallGraph(object):
             node.getMinDepth()
          if node.minDepth > maxDepth: continue
          print(' {0}:{1}'.format(node.id,
-               node.selfTime+node.totTime), end="")
+               (node.selfTime)/self.totalExecutionTime), end="")
+         #      (node.selfTime+node.totTime)/self.totalExecutionTime), end="")
       print("")
    #
    # Output a function id->name mapping
@@ -74,6 +75,26 @@ class CallGraph(object):
       for nid in self.nodeTable:
          node = self.nodeTable[nid]
          print("'{0}':'{1}',".format(node.id, node.name))
+   #
+   # subtract another call graph's data from this one
+   # - used to create interval data rather than cumulative
+   #
+   def subtractCallGraph(self,othercg):
+      for nid in othercg.nodeTable:
+         onode = othercg.nodeTable[nid]
+         snode = None
+         if nid in self.nodeTable and onode.name == self.nodeTable[nid].name:
+            snode = self.nodeTable[nid]
+         else:
+            for sid in self.nodeTable:
+               if onode.name == self.nodeTable[sid].name:
+                  snode = self.nodeTable[sid]
+                  break
+         if snode is None:
+            continue
+         # now merge stats from onode into snode
+         snode.subtractNodeData(onode)
+      # what do we do about edges?
    #
    # merge another call graph's data into this one
    #
@@ -132,10 +153,16 @@ class Node(object):
       self.totTime = totTime
       self.numCalls = numCalls
    #
-   # update data from flat profile
+   # update data from flat profile tuple (fpct,fstime,fcalls)
    #
    def updateFlatData(self,flatData):
       if debug: print("Update from flat data")
+      if flatData[0] > 0.0001:
+         self.totTimePct = flatData[0]
+      if flatData[1] > 0.0001:
+         self.selfTime = flatData[1]
+      if flatData[2] > 0:
+         self.numCalls = flatData[2]
    #
    # print info of this function
    #
@@ -180,6 +207,15 @@ class Node(object):
       self.selfTime = self.selfTime + other.selfTime
       self.totTime = self.totTime + other.totTime
       self.numCalls = self.numCalls + other.numCalls
+   #
+   # subtract data from the same function in another call graph
+   #
+   def subtractNodeData(self, other):
+      # just add pcts for now, factor will be applied later
+      #self.totTimePct = self.totTimePct - other.totTimePct   TODO ???
+      self.selfTime = self.selfTime - other.selfTime
+      self.totTime = self.totTime - other.totTime
+      self.numCalls = self.numCalls - other.numCalls
 
 #---------------------------------------------------------------------
 # Edge objects keep connections between functions

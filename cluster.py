@@ -45,6 +45,7 @@ import sklearn.datasets
 import sklearn.cluster
 import math
 import json
+import numpy as np
 
 # set true for lots of debugging out (will interfere with output formats)
 debug = False
@@ -297,20 +298,44 @@ def doKMeansClustering():
 #
 # 
 #
-def doDbscanClustering():
+def doDbscanClustering(fnames):
    centroids = []
    cld = []
    clparms = []
    basedist = 0
-   c = sklearn.cluster.DBSCAN(eps=3, min_samples=2).fit(X)
-   print "Clusters over data vector:"
-   print c.labels_
-   #print c.n_features_in_
-   print "Cluster core indices"
-   print c.core_sample_indices_
-   print "Cluster Core Components"
-   print c.components_
-   return True   
+   epsilon = 0.1
+   if False:
+      c = sklearn.cluster.DBSCAN(eps=epsilon, metric='manhattan', min_samples=2).fit(X)
+      print "Clusters over data vector:"
+      print c.labels_
+      #print c.n_features_in_
+      print "Cluster core indices"
+      print c.core_sample_indices_
+      print "Cluster Core Components"
+      print c.components_
+   else:
+      c = sklearn.cluster.dbscan(X, eps=epsilon, min_samples=2, metric='manhattan')
+      print "Result len {0}".format(len(c))
+      numclusters = len(set(c[1])) - (1 if -1 in c[1] else 0)
+      print "Number of clusters: {0}".format(numclusters)
+      print "Clusters over data vector:"
+      print c[1]
+      print "Cluster core indices"
+      print c[0]
+      print "Estimated centroids"
+      for i in range(numclusters):
+         points = []
+         for l in range(len(c[1])):
+            if c[1][l] == i: points.append(X[l])
+         #points = c[1][labels==i,:]
+         #print points
+         #centroid = np.mean(points) 
+         #print(centroid)
+         print np.mean(points,axis=0)
+      #print np.mean(X[0])
+   return True 
+   
+
 
 #
 # Main program
@@ -347,5 +372,5 @@ if debug:
    print y
 
 #doKMeansClustering()
-doDbscanClustering()
+doDbscanClustering(0)
 

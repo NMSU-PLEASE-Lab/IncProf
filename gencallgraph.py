@@ -223,7 +223,7 @@ def processCallGraphSection(line, fileh, cgraph):
             n.update(funcTotTimePct, funcSelfTime, funcChildrenTime,
                      funcNumCalls)
          if funcName in cgraph.flatProfileData:
-            n.updateFlatData(cgraph.flatProfileData)
+            n.updateFlatData(cgraph.flatProfileData[funcName])
          for caller in callers:
             if not caller['id'] in cgraph.nodeTable:
                n = cg.Node(cgraph,caller['name'],caller['id'],0,0,0,0)
@@ -364,6 +364,8 @@ else:
       #for n in cgraph.nodeTable:
       #   node = cgraph.nodeTable[n]
       #   node.printMe()
+   for i in range(1,maxind):
+      cgs[i+1].subtractCallGraph(cgs[i])
    for i in range(maxind):
       if debug: print(cgs[i+1])
       cgs[i+1].outputLibSVMLine()
