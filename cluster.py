@@ -157,6 +157,160 @@ def findOptKElbow(clParams):
    # return two selections based on thresholds
    return (maxk, round(maxd,3), amaxk, round(amaxd,3))
 
+#
+#
+#
+def doKMeansClustering():
+   centroids = []
+   cld = []
+   clparms = []
+   basedist = 0
+   #
+   # Run clustering for K=1 to K=8, save results and print metrics
+   #
+   print "K  metrics"
+   for i in range(1,9):
+      #print "dtype", X.dtype
+      #for j in X:
+      #   print j.shape,
+      #print ""
+      # k_means returns tuple of (?, data-cluster-id-list, total-pt-dist, ?)
+      #if i==3 or i==4:
+      #   c = sklearn.cluster.k_means(X,2,n_init=30)
+      #else:
+      c = sklearn.cluster.k_means(X,i,n_init=30)
+      if basedist == 0:
+         basedist = c[2]
+      #print i, c[1], "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
+      print i, "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
+      centroids.append(c[0])
+      cld.append(c[1])
+      clparms.append(c[2]/basedist)
+   #
+   # Find "best" K using a couple of different methods, and print them
+   bestk = findOptimalK(clparms)
+   elbowk = findOptKElbow(clparms)
+   print "bestK:", bestk, "elbowK:", elbowk
+   
+   felbowk = open('cluster.elbowk', 'w')
+   fbestk = open('cluster.bestk', 'w')
+   #
+   # Print the clustering of each data element vertically
+   #
+   print elbowk[0]
+   print "V\K:",
+   for i in range(1,9):
+      print i,
+   print ""
+   for j in range(0,len(cld[0])):
+      print "{0:3d}:".format(j),
+      for i in range(0,8):
+         print cld[i][j],
+   
+         #
+         # print cluster data in a seprate file
+         #
+   
+         # Print the the elbowk cluster elements vertically
+         if i == (elbowk[0] - 1):
+            felbowk.write("{0},{1}\n".format(j, cld[i][j]))
+         # Print the the bestk cluster elements vertically
+         if i == (bestk[0] - 1):
+            fbestk.write("{0},{1}\n".format(j, cld[i][j]))
+      print
+   
+   felbowk.close()
+   fbestk.close()
+   
+   #
+   # Load Id Map if available
+   idmap = None
+   if idmapFilename != "":
+      idmap = loadIdMap(idmapFilename,flip)
+      if debug:
+         print idmap
+   
+   #print "idmap"
+   #print idmap
+   #
+   # Print out characteristics of cluster centroids for bestK and elbowK
+   #
+   print "'Optimal' K = ",bestk[0],"Centroids"
+   n = 1
+   for c in centroids[bestk[0]-1]: 
+      print "Cluster",n-1,":"
+      normalize(c)
+      for f in range(len(c)):
+         if c[f] > 0.00099:
+      # search if the function exist in other clusters
+      # TODO: find a better way to do it
+      # JEC: why is this comment between the if stmt and r=1????
+            r = 1
+      # JEC TODO: I have no idea the proper indentation below here (w/ tabs)
+            ex_list = [] #exist in other cluster list
+            for c1 in centroids[bestk[0]-1]:
+               normalize(c1)
+               if r != n and c1[f] > 0.00099:
+                  ex_list.append(r-1) # add the cluster number
+                  #print "ex_list:", ex_list 
+               r += 1
+   
+            # JEC for 2-val func data
+            # m = int(f/10)
+            m = str(f)
+            if idmap != None and m in idmap:
+               print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
+            elif f < len(c):
+               print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
+            else:
+               print "unknown??",f
+      n += 1
+   if bestk[0] == elbowk[0]:
+      exit()
+   print "Elbow K = ",elbowk[0],"Centroids"
+   n = 1
+   for c in centroids[elbowk[0]-1]:
+      print "Cluster",n-1,":"
+      normalize(c)
+      for f in range(len(c)):
+         if c[f] > 0.00099:
+   
+            # search if the function exist in other clusters
+            # TODO: find a better way to do it
+            r = 1
+            ex_list = [] #exist in other cluster list
+            for c1 in centroids[elbowk[0]-1]:
+               normalize(c1)
+               if r != n and c1[f] > 0.00099:
+                  ex_list.append(r-1) # add the cluster number
+                  #print "ex_list:", ex_list
+               r += 1
+            # JEC for 2-val func data
+            # m = int(f/10)
+            m = str(f)
+            if idmap != None and m in idmap:
+               print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
+            else:
+               print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
+      n += 1
+
+#
+# 
+#
+def doDbscanClustering():
+   centroids = []
+   cld = []
+   clparms = []
+   basedist = 0
+   c = sklearn.cluster.DBSCAN(eps=3, min_samples=2).fit(X)
+   print "Clusters over data vector:"
+   print c.labels_
+   #print c.n_features_in_
+   print "Cluster core indices"
+   print c.core_sample_indices_
+   print "Cluster Core Components"
+   print c.components_
+   return True   
 
 #
 # Main program
@@ -192,136 +346,6 @@ if debug:
    print X
    print y
 
-centroids = []
-cld = []
-clparms = []
-basedist = 0
-#
-# Run clustering for K=1 to K=8, save results and print metrics
-#
-print "K  metrics"
-for i in range(1,9):
-   #print "dtype", X.dtype
-   #for j in X:
-   #   print j.shape,
-   #print ""
-   # k_means returns tuple of (?, data-cluster-id-list, total-pt-dist, ?)
-   #if i==3 or i==4:
-   #   c = sklearn.cluster.k_means(X,2,n_init=30)
-   #else:
-   c = sklearn.cluster.k_means(X,i,n_init=30)
-   if basedist == 0:
-      basedist = c[2]
-   #print i, c[1], "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
-   print i, "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
-   centroids.append(c[0])
-   cld.append(c[1])
-   clparms.append(c[2]/basedist)
-#
-# Find "best" K using a couple of different methods, and print them
-bestk = findOptimalK(clparms)
-elbowk = findOptKElbow(clparms)
-print "bestK:", bestk, "elbowK:", elbowk
-
-felbowk = open('cluster.elbowk', 'w')
-fbestk = open('cluster.bestk', 'w')
-#
-# Print the clustering of each data element vertically
-#
-print elbowk[0]
-print "V\K:",
-for i in range(1,9):
-   print i,
-print ""
-for j in range(0,len(cld[0])):
-   print "{0:3d}:".format(j),
-   for i in range(0,8):
-      print cld[i][j],
-
-      #
-      # print cluster data in a seprate file
-      #
-
-      # Print the the elbowk cluster elements vertically
-      if i == (elbowk[0] - 1):
-         felbowk.write("{0},{1}\n".format(j, cld[i][j]))
-      # Print the the bestk cluster elements vertically
-      if i == (bestk[0] - 1):
-         fbestk.write("{0},{1}\n".format(j, cld[i][j]))
-   print
-
-felbowk.close()
-fbestk.close()
-
-#
-# Load Id Map if available
-idmap = None
-if idmapFilename != "":
-   idmap = loadIdMap(idmapFilename,flip)
-   if debug:
-      print idmap
-
-#print "idmap"
-#print idmap
-#
-# Print out characteristics of cluster centroids for bestK and elbowK
-#
-print "'Optimal' K = ",bestk[0],"Centroids"
-n = 1
-for c in centroids[bestk[0]-1]: 
-   print "Cluster",n-1,":"
-   normalize(c)
-   for f in range(len(c)):
-      if c[f] > 0.00099:
-   # search if the function exist in other clusters
-   # TODO: find a better way to do it
-   # JEC: why is this comment between the if stmt and r=1????
-         r = 1
-   # JEC TODO: I have no idea the proper indentation below here (w/ tabs)
-         ex_list = [] #exist in other cluster list
-         for c1 in centroids[bestk[0]-1]:
-            normalize(c1)
-            if r != n and c1[f] > 0.00099:
-               ex_list.append(r-1) # add the cluster number
-               #print "ex_list:", ex_list 
-            r += 1
-
-         # JEC for 2-val func data
-         # m = int(f/10)
-         m = str(f)
-         if idmap != None and m in idmap:
-            print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
-         elif f < len(c):
-            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
-         else:
-            print "unknown??",f
-   n += 1
-if bestk[0] == elbowk[0]:
-   exit()
-print "Elbow K = ",elbowk[0],"Centroids"
-n = 1
-for c in centroids[elbowk[0]-1]:
-   print "Cluster",n-1,":"
-   normalize(c)
-   for f in range(len(c)):
-      if c[f] > 0.00099:
-
-         # search if the function exist in other clusters
-         # TODO: find a better way to do it
-         r = 1
-         ex_list = [] #exist in other cluster list
-         for c1 in centroids[elbowk[0]-1]:
-            normalize(c1)
-            if r != n and c1[f] > 0.00099:
-               ex_list.append(r-1) # add the cluster number
-               #print "ex_list:", ex_list
-            r += 1
-         # JEC for 2-val func data
-         # m = int(f/10)
-         m = str(f)
-         if idmap != None and m in idmap:
-            print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
-         else:
-            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
-   n += 1
+#doKMeansClustering()
+doDbscanClustering()
 
