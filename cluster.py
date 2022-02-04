@@ -72,9 +72,9 @@ optClusterParams = [ \
 #
 # Normalize a list of real numbers
 # - used to show relative importance of each value in a data vector
-#
+# - assumes positive???
 def normalize(vals):
-   max = -9999999
+   max = -9999999.0
    for v in vals:
       if max < v:
          max = v
@@ -82,7 +82,7 @@ def normalize(vals):
       vals[i] = vals[i] / max
       
 #
-# Load the ID Map file
+# Load the ID Map file (function int -> name mapping, possibly backwards)
 #
 def loadIdMap(filename,flip):
    idmap = {}
@@ -266,7 +266,7 @@ if idmapFilename != "":
 #
 # Print out characteristics of cluster centroids for bestK and elbowK
 #
-print "K = ",bestk[0],"Centroids"
+print "'Optimal' K = ",bestk[0],"Centroids"
 n = 1
 for c in centroids[bestk[0]-1]: 
    print "Cluster",n-1,":"
@@ -276,25 +276,29 @@ for c in centroids[bestk[0]-1]:
    # search if the function exist in other clusters
    # TODO: find a better way to do it
    # JEC: why is this comment between the if stmt and r=1????
-        r = 1
+         r = 1
    # JEC TODO: I have no idea the proper indentation below here (w/ tabs)
-	 ex_list = [] #exist in other cluster list
-	 for c1 in centroids[bestk[0]-1]:
-	    normalize(c1)
+         ex_list = [] #exist in other cluster list
+         for c1 in centroids[bestk[0]-1]:
+            normalize(c1)
             if r != n and c1[f] > 0.00099:
-	       ex_list.append(r-1) # add the cluster number
-	       #print "ex_list:", ex_list 
-	    r += 1
+               ex_list.append(r-1) # add the cluster number
+               #print "ex_list:", ex_list 
+            r += 1
 
-         m = int(f/10)
+         # JEC for 2-val func data
+         # m = int(f/10)
+         m = str(f)
          if idmap != None and m in idmap:
-            print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m],ex_list)
+            print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
+         elif f < len(c):
+            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
          else:
-            print "   {0:d}: {1:.3f}  {3}".format(f,c[f],ex_list)
+            print "unknown??",f
    n += 1
 if bestk[0] == elbowk[0]:
    exit()
-print "K = ",elbowk[0],"Centroids"
+print "Elbow K = ",elbowk[0],"Centroids"
 n = 1
 for c in centroids[elbowk[0]-1]:
    print "Cluster",n-1,":"
@@ -312,11 +316,12 @@ for c in centroids[elbowk[0]-1]:
                ex_list.append(r-1) # add the cluster number
                #print "ex_list:", ex_list
             r += 1
-#JEC TODO: what is the indentation of the line below????
-	 m = int(f/10)
+         # JEC for 2-val func data
+         # m = int(f/10)
+         m = str(f)
          if idmap != None and m in idmap:
-            print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m],ex_list)
+            print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
          else:
-            print "   {0:d}: {1:.3f}  {3}".format(f,c[f],ex_list)
+            print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
    n += 1
 

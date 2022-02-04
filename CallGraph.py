@@ -5,7 +5,11 @@
 debug = False
 doDot = False
 maxDepth = 20
+maxNameLen = 30  # for printing, but name is stored full length
 
+# mostly for dot, which has trouble with lots of punctuation
+# converts many punc symbols to underscores
+# needed for complex C++ method names
 def cleanName(name):
    trs = {32:95, 60:95, 62:95, 38:95, 42:95, 44:95, 58:95, 40:95, 41:95}
    return (name.translate(trs))
@@ -41,12 +45,12 @@ class CallGraph(object):
       print("digraph {")
       for nid in self.nodeTable:
          node = self.nodeTable[nid]
-         print('{0} [label="{0}\\n{1}"]'.format(node.name[:30], 
+         print('{0} [label="{0}\\n{1}"]'.format(node.name[:maxNameLen], 
                node.selfTime+node.totTime))
       for eid in self.edgeTable:
          edge = self.edgeTable[eid]
-         print('{0}->{1} [label="{2}"]'.format(edge.caller.name[:30],
-               edge.callee.name[:30], edge.numCalls))
+         print('{0}->{1} [label="{2}"]'.format(edge.caller.name[:maxNameLen],
+               edge.callee.name[:maxNameLen], edge.numCalls))
       print("}")
    #
    # Output graph info in one libsvm-formatted data line
@@ -69,7 +73,7 @@ class CallGraph(object):
    def outputFunctionMap(self):
       for nid in self.nodeTable:
          node = self.nodeTable[nid]
-         print('{0}:{1}'.format(node.id, node.name))
+         print("'{0}':'{1}',".format(node.id, node.name))
    #
    # merge another call graph's data into this one
    #
@@ -136,7 +140,7 @@ class Node(object):
    # print info of this function
    #
    def printMe(self):
-      print("Node: {0} {1}".format(self.id, self.name[:40]))
+      print("Node: {0} {1}".format(self.id, self.name[:maxNameLen]))
       print("  stats: tot%:{0} self:{1} tot:{2} calls:{3}".format(
          self.totTimePct, self.selfTime, self.totTime, self.numCalls))
       print("  depth: {0}".format(self.getMinDepth()))
@@ -212,7 +216,7 @@ class Edge(object):
    #
    def printMe(self,space):
       print("{0}count {3} from {1}:{4}\n{0}           to {2}:{5}".format(space,
-         self.caller.id, self.callee.id, self.numCalls, self.caller.name[:40],
-         self.callee.name[:40]))
+         self.caller.id, self.callee.id, self.numCalls, 
+         self.caller.name[:maxNameLen], self.callee.name[:maxNameLen]))
 
 

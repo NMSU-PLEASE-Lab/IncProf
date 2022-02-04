@@ -27,14 +27,16 @@ doDot = False
 maxDepth = 20
 
 #---------------------------------------------------------------------
-# Read gprof table and create call graph objects
+# Read gprof data and create call graph objects
 # param filename is the filename that the gprof output exists in
 #---------------------------------------------------------------------
 def createProfileGraph(filename,id):
    inCGTable = False    # true when we are processing DG data lines
    inFlatTable = False  # true when we are processing flat data lines
    inf = open(filename)
-   # TODO error handling here
+   if inf is None:
+      print("ERROR: no such file ({0})".format(filename))
+      return None
    cgraph = cg.CallGraph(id)
    while True:
       line = inf.readline()
@@ -301,11 +303,13 @@ argParser.add_argument('--depth', action='store', type=int, default=20, help='li
 argParser.add_argument('--text', action='store', default='gprof.txt', metavar='<gprof-report-file>', help='filename of text gprof report')
 argParser.add_argument('--bin', action='store', nargs=2, metavar='<filename>', help='invoke gprof on <exectuable gmon.out> pair')
 argParser.add_argument('--bindir', action='store', nargs=2, metavar='<name>', help='invoke gprof on all profiles in <exectuable directory> pair')
+argParser.add_argument('--dirpat', action='store', default=".*(\d+)", help='regex for filename parsing, must have one (\d+)')
 args = argParser.parse_args()
 debug = args.debug
 doDot = args.dot
 textFile = args.text
 maxDepth = args.depth
+dirPattern = args.dirpat
 
 if args.bindir is None:
    #
@@ -340,7 +344,7 @@ else:
    sd = os.scandir(args.bindir[1])
    for f in sd:
       if not f.is_file(): continue
-      v = re.match(".*(\d+)",f.name)
+      v = re.match(dirPattern,f.name)
       if v is None:
          print("filename {0} does not end with a number".format(f.name))
          continue
@@ -351,6 +355,8 @@ else:
       os.system("gprof {0} {1} > {2}".format(args.bindir[0], proFile, 
                 textFile))
       cgraph = createProfileGraph(textFile,ind)
+      if cgraph is None:
+         continue
       os.system("rm -f {0}".format(textFile))
       cgs[ind] = cgraph
       if ind > maxind: maxind = ind
