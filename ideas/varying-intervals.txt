@@ -1,0 +1,16 @@
+
+With IncProf we collect data at a fixed interval, but this may not necessarily be the best interval with regards to analyzing the application.
+
+Idea: group data into larger intervals until the analysis is "optimal"
+
+1. run clustering, elbow/sil to pick N, measure clustering quality somehow
+2. then add adjacent intervals together, so that we have 1/2 the number of
+   intervals, each twice as long
+3. goto step 1
+
+At the end, pick the "best" interval length that produces the best clustering.
+
+Then pick instrumentation points.
+
+
+
