@@ -159,7 +159,38 @@ def findOptKElbow(clParams):
    return (maxk, round(maxd,3), amaxk, round(amaxd,3))
 
 #
+# Find the closest interval data point to a cluster centroid
+# - X is a csr_matrix and so behaves a bit weirdly
 #
+def findClosestRealDatapoint(X,centroid):
+  print("Find closest real data point------------------------")
+  dim1 = X.shape[0] # num of elements (intervals) in X
+  dim2 = X.shape[1] # num of attributes (functions w/ data)
+  #print "X shape {0}  centroid length {1}".format(X.shape,len(centroid))
+  mindist = 99999999.0
+  mindp = 0
+  # loop over all datapoints to find closest
+  for n in range(dim1):
+     dp = X[n]
+     dist = 0.0
+     #print(dp)
+     # loop through attributes (dimensions) and compute distance
+     # - this is manhattan distance, I believe
+     for i in range(dim2):
+        delta = dp[(0,i)] - centroid[i]
+        dist += math.sqrt(delta*delta)
+     if dist < mindist:
+        # new closest datapoint, so save info
+        mindist = dist
+        mindp = n
+  #print("X shape {0}  centroid length {1}".format(X.shape,len(centroid)))
+  print("Closest dp: {0} :\n{1}".format(mindp,X[mindp]))
+  print("Centroid:\n{0}".format(centroid))
+  print("END closest real data point------------------------")
+  return True
+
+#
+# Do KMeans clustering and print results
 #
 def doKMeansClustering():
    centroids = []
@@ -240,6 +271,7 @@ def doKMeansClustering():
    n = 1
    for c in centroids[bestk[0]-1]: 
       print "Cluster",n-1,":"
+      closestReal = findClosestRealDatapoint(X,c)
       normalize(c)
       for f in range(len(c)):
          if c[f] > 0.00099:
@@ -371,6 +403,6 @@ if debug:
    print X
    print y
 
-#doKMeansClustering()
-doDbscanClustering(0)
+doKMeansClustering()
+#doDbscanClustering(0)
 

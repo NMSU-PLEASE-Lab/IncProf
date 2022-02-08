@@ -106,7 +106,7 @@ def processCallGraphSection(line, fileh, cgraph):
          # match line like "                   <spontaneous>"
          if None != re.match("\s+<spontaneous>",line):
             caller['name'] = "_spontaneous_"
-            caller['id'] = 0
+            caller['id'] = cg.getFunctionID(caller['name'])
             caller['selftime'] = 0.0
             caller['childtime'] = 0.0
             caller['numcalls'] = 0
@@ -116,7 +116,8 @@ def processCallGraphSection(line, fileh, cgraph):
          v = re.match("\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)/(\d+)\s+(.+) \[(\d+)\]",line)
          if v is not None and done is not True:
             caller['name'] = v.group(5)
-            caller['id'] = int(v.group(6))
+            #caller['id'] = int(v.group(6)) not consistent
+            caller['id'] = cg.getFunctionID(v.group(5))
             caller['selftime'] = float(v.group(1))
             caller['childtime'] = float(v.group(2))
             caller['numcalls'] = int(v.group(3))
@@ -126,7 +127,8 @@ def processCallGraphSection(line, fileh, cgraph):
          v = re.match("\s+(\d+)\s+(.+) \[(\d+)\]",line)
          if v is not None and done is not True:
             caller['name'] = v.group(2)
-            caller['id'] = int(v.group(3))
+            #caller['id'] = int(v.group(3)) not consistent
+            caller['id'] = cg.getFunctionID(v.group(2))
             caller['selftime'] = 0.0
             caller['childtime'] = 0.0
             caller['numcalls'] = int(v.group(1))
@@ -146,7 +148,8 @@ def processCallGraphSection(line, fileh, cgraph):
          v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)\s+(.+) \[(\d+)\]",line)
          if v is not None: # and len(v.group) == 6:
             funcName = v.group(6)
-            funcId = int(v.group(1))
+            #funcId = int(v.group(1)) not consistent
+            funcId = cg.getFunctionID(funcName)
             funcTotTimePct = float(v.group(2))
             funcSelfTime = float(v.group(3))
             funcChildrenTime = float(v.group(4))
@@ -156,7 +159,8 @@ def processCallGraphSection(line, fileh, cgraph):
          v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)\+(\d+)\s+(.+) \[(\d+)\]",line)
          if v is not None and done is not True:
             funcName = v.group(7)
-            funcId = int(v.group(1))
+            #funcId = int(v.group(1)) not consistent
+            funcId = cg.getFunctionID(funcName)
             funcTotTimePct = 0.0
             funcSelfTime = float(v.group(2))
             funcChildrenTime = float(v.group(3))
@@ -166,7 +170,8 @@ def processCallGraphSection(line, fileh, cgraph):
          v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(.+) \[(\d+)\]",line)
          if v is not None and done is not True:
             funcName = v.group(5)
-            funcId = int(v.group(1))
+            #funcId = int(v.group(1)) not consistent
+            funcId = cg.getFunctionID(funcName)
             funcTotTimePct = float(v.group(2))
             funcSelfTime = float(v.group(3))
             funcChildrenTime = float(v.group(4))
@@ -176,7 +181,8 @@ def processCallGraphSection(line, fileh, cgraph):
          v = re.match("\[(\d+)\]\s+(\d+\.\d+)\s+(\d+\.\d+)\s+(\d+)/(\d+)\s+(.+) \[(\d+)\]",line)
          if v is not None and done is not True:
             funcName = v.group(6)
-            funcId = int(v.group(1))
+            #funcId = int(v.group(1)) not consistent
+            funcId = cg.getFunctionID(funcName)
             funcTotTimePct = 0.0
             funcSelfTime = float(v.group(2))
             funcChildrenTime = float(v.group(3))
@@ -196,7 +202,8 @@ def processCallGraphSection(line, fileh, cgraph):
             # we extract the child info and print it, but don't do anything else
             # with it for now, but maybe in the future
             childName = v.group(5)
-            childId = int(v.group(6))
+            #childId = int(v.group(6)) not consistent
+            childId = cg.getFunctionID(childName)
             childSelfTime = float(v.group(1))
             childChildrenTime = float(v.group(2))
             childNumCalls = int(v.group(3))
@@ -273,7 +280,7 @@ def reduceCGSequence(cgs, factor):
    newcgs = {}
    newcgid = 1
    count = 0
-   print("reduce {0} graphs...".format(len(cgs)))
+   if debug: print("reduce {0} graphs...".format(len(cgs)))
    for cgi in cgs:
       if count == 0:
          # start out new reduction call graph
@@ -303,7 +310,7 @@ argParser.add_argument('--depth', action='store', type=int, default=20, help='li
 argParser.add_argument('--text', action='store', default='gprof.txt', metavar='<gprof-report-file>', help='filename of text gprof report')
 argParser.add_argument('--bin', action='store', nargs=2, metavar='<filename>', help='invoke gprof on <exectuable gmon.out> pair')
 argParser.add_argument('--bindir', action='store', nargs=2, metavar='<name>', help='invoke gprof on all profiles in <exectuable directory> pair')
-argParser.add_argument('--dirpat', action='store', default=".*(\d+)", help='regex for filename parsing, must have one (\d+)')
+argParser.add_argument('--dirpat', action='store', default=".*\.(\d+)", help='regex for filename parsing, must have one (\d+)')
 args = argParser.parse_args()
 debug = args.debug
 doDot = args.dot
@@ -339,11 +346,14 @@ else:
    # - assumes data files end with sequential numbers
    #   representing their ordering (of, e.g., intervals)
    #
+   if debug: print("Processing directory {0}/".format(args.bindir[1]))
    cgs = {}
    maxind = 0
    sd = os.scandir(args.bindir[1])
    for f in sd:
-      if not f.is_file(): continue
+      if not f.is_file():
+         print("filename {0} is not a regular file".format(f.name))
+         continue
       v = re.match(dirPattern,f.name)
       if v is None:
          print("filename {0} does not end with a number".format(f.name))
@@ -364,19 +374,20 @@ else:
       #for n in cgraph.nodeTable:
       #   node = cgraph.nodeTable[n]
       #   node.printMe()
+   if debug: print("Read {0} profiles...".format(maxind))
    for i in range(1,maxind):
       cgs[i+1].subtractCallGraph(cgs[i])
    for i in range(maxind):
       if debug: print(cgs[i+1])
       cgs[i+1].outputLibSVMLine()
-   print("----")
+   print("------------------------------------------")
    factor = 2
    # just testing reduction here below
    cgs = reduceCGSequence(cgs, factor)
    for i in range(math.ceil(maxind/factor)):
       if debug: print(cgs[i+1])
       cgs[i+1].outputLibSVMLine()
-   print("----")
+   print("------------------------------------------")
    cgraph.outputFunctionMap()
 
 exit(0)

@@ -4,7 +4,7 @@
 
 debug = False
 doDot = False
-maxDepth = 20
+maxDepth = 10
 maxNameLen = 30  # for printing, but name is stored full length
 
 # mostly for dot, which has trouble with lots of punctuation
@@ -14,6 +14,16 @@ def cleanName(name):
    trs = {32:95, 60:95, 62:95, 38:95, 42:95, 44:95, 58:95, 40:95, 41:95}
    return (name.translate(trs))
 
+functionIdMap = {}
+nextFunctionID = 0
+def getFunctionID(name):
+   global functionIdMap, nextFunctionID
+   # keep map of translated names??? I think it should work
+   name = cleanName(name)
+   if name not in functionIdMap:
+      functionIdMap[name] = nextFunctionID
+      nextFunctionID += 1
+   return functionIdMap[name]
 
 #---------------------------------------------------------------------
 # Top level object for a call graph
@@ -26,7 +36,7 @@ class CallGraph(object):
    # constructor
    #
    def __init__(self,id):
-      self.functionTimeThreshold = 0.01
+      self.functionTimeThreshold = 0.05
       # place to hold flat profile data until nodes are set up
       self.flatProfileData = {}
       self.totalExecutionTime = 0.001  # avoid divide by zero?
@@ -59,22 +69,24 @@ class CallGraph(object):
    def outputLibSVMLine(self):
       # <label> <feature-id>:<feature-value> <feature-id>:<feature-value>
       print("{0}".format(self.id), end="")
-      for nid in self.nodeTable:
+      for nid in sorted(self.nodeTable):
          node = self.nodeTable[nid]
          if node.minDepth < 0: 
             node.getMinDepth()
          if node.minDepth > maxDepth: continue
          print(' {0}:{1}'.format(node.id,
-               (node.selfTime)/self.totalExecutionTime), end="")
+               (node.selfTime+node.totTime)/self.totalExecutionTime), end="")
          #      (node.selfTime+node.totTime)/self.totalExecutionTime), end="")
       print("")
    #
    # Output a function id->name mapping
    #
    def outputFunctionMap(self):
+      print("{")
       for nid in self.nodeTable:
          node = self.nodeTable[nid]
-         print("'{0}':'{1}',".format(node.id, node.name))
+         print('"{0}":"{1}",'.format(node.id, node.name))
+      print("}")
    #
    # subtract another call graph's data from this one
    # - used to create interval data rather than cumulative
@@ -133,6 +145,8 @@ class Node(object):
    def __init__(self,cg,name,fid,totTimePct,selfTime,totTime,numCalls):
       self.cg = cg  # call graph that we are part of
       self.name = cleanName(name)
+      # incoming fid doesn't work, so replace it
+      fid = getFunctionID(name)
       self.id = fid
       self.totTimePct = totTimePct # from CG, %time column
       self.selfTime = selfTime     # from CG, self column (== flat self?)
@@ -229,16 +243,24 @@ class Edge(object):
    #
    def __init__(self,cg,callerId,calleeId,numCalls,totCalls):
       self.cg = cg
-      self.callee = cg.nodeTable[calleeId]
+      if calleeId not in cg.nodeTable:
+         print("Error: no callee {0} in table".format(calleeId))
+         self.callee = None
+      else:
+         self.callee = cg.nodeTable[calleeId]
       if self.callee == None:
          print("Error: no callee for edge")
-      self.caller = cg.nodeTable[callerId]
+      if callerId not in cg.nodeTable:
+         print("Error: no caller {0} in table".format(callerId))
+         self.caller = None
+      else:
+         self.caller = cg.nodeTable[callerId]
       if self.caller == None:
          print("Error: no callee for edge")
       #self.caller = caller
       #self.callee = callee
-      self.callee.callerEdges.append(self)
-      self.caller.childEdges.append(self)
+      if self.callee: self.callee.callerEdges.append(self)
+      if self.caller: self.caller.childEdges.append(self)
       self.numCalls = numCalls
       # not sure about this...is printing on valid data?
       #if self.callee.numCalls != totCalls:
