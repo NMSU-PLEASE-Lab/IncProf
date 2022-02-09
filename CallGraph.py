@@ -4,7 +4,7 @@
 
 debug = False
 doDot = False
-maxDepth = 4
+maxDepth = 8
 maxNameLen = 30  # for printing, but name is stored full length
 
 # mostly for dot, which has trouble with lots of punctuation

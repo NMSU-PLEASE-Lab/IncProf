@@ -189,6 +189,17 @@ def findClosestRealDatapoint(X,centroid):
   print("END closest real data point------------------------")
   return True
 
+##
+#
+#
+def countClusterMagnitude(clusterId, labeledData):
+   size = 0
+   for i in labeledData:
+      #if labeledData[i] == clusterId:
+      if i == clusterId:
+         size += 1
+   return size
+
 #
 # Do KMeans clustering and print results
 #
@@ -229,7 +240,7 @@ def doKMeansClustering():
    #
    # Print the clustering of each data element vertically
    #
-   print elbowk[0]
+   #print elbowk[0]
    print "V\K:",
    for i in range(1,9):
       print i,
@@ -264,6 +275,19 @@ def doKMeansClustering():
    
    #print "idmap"
    #print idmap
+
+   # compute sizes of clustersin best and elbow
+   clSizeBest = []
+   n = 0
+   for c in centroids[bestk[0]-1]: 
+      clSizeBest.append(countClusterMagnitude(n, cld[bestk[0]-1]))
+      n += 1
+   clSizeElbow = []
+   n = 0
+   for c in centroids[elbowk[0]-1]: 
+      clSizeElbow.append(countClusterMagnitude(n, cld[elbowk[0]-1]))
+      n += 1
+
    #
    # Print out characteristics of cluster centroids for bestK and elbowK
    #
@@ -271,8 +295,13 @@ def doKMeansClustering():
    n = 1
    for c in centroids[bestk[0]-1]: 
       print "Cluster",n-1,":"
+      print "  size = {0}".format(clSizeBest[n-1])
+      if clSizeBest[n-1] < 5:
+         n += 1
+         continue
       closestReal = findClosestRealDatapoint(X,c)
       normalize(c)
+      haveInstrumentation = False
       for f in range(len(c)):
          if c[f] > 0.00099:
       # search if the function exist in other clusters
@@ -283,11 +312,13 @@ def doKMeansClustering():
             ex_list = [] #exist in other cluster list
             for c1 in centroids[bestk[0]-1]:
                normalize(c1)
-               if r != n and c1[f] > 0.00099:
+               if r != n and c1[f] > 0.099 and clSizeBest[r-1] > 5:
                   ex_list.append(r-1) # add the cluster number
                   #print "ex_list:", ex_list 
                r += 1
-   
+            if len(ex_list) == 0 and not haveInstrumentation:
+               ex_list.append("Instrument here")
+               haveInstrumentation = True
             # JEC for 2-val func data
             # m = int(f/10)
             m = str(f+1)
@@ -304,7 +335,12 @@ def doKMeansClustering():
    n = 1
    for c in centroids[elbowk[0]-1]:
       print "Cluster",n-1,":"
+      print "  size = {0}".format(clSizeElbow[n-1])
+      if clSizeElbow[n-1] < 5:
+         n += 1
+         continue
       normalize(c)
+      haveInstrumentation = False
       for f in range(len(c)):
          if c[f] > 0.00099:
    
@@ -314,10 +350,13 @@ def doKMeansClustering():
             ex_list = [] #exist in other cluster list
             for c1 in centroids[elbowk[0]-1]:
                normalize(c1)
-               if r != n and c1[f] > 0.00099:
+               if r != n and c1[f] > 0.099 and clSizeElbow[r-1] > 5:
                   ex_list.append(r-1) # add the cluster number
                   #print "ex_list:", ex_list
                r += 1
+            if len(ex_list) == 0 and not haveInstrumentation:
+               ex_list.append("Instrument here")
+               haveInstrumentation = True
             # JEC for 2-val func data
             # m = int(f/10)
             m = str(f+1)
