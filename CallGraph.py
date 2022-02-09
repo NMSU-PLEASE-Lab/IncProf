@@ -4,7 +4,7 @@
 
 debug = False
 doDot = False
-maxDepth = 10
+maxDepth = 4
 maxNameLen = 30  # for printing, but name is stored full length
 
 # mostly for dot, which has trouble with lots of punctuation
@@ -56,7 +56,7 @@ class CallGraph(object):
       for nid in self.nodeTable:
          node = self.nodeTable[nid]
          print('{0} [label="{0}\\n{1}"]'.format(node.name[:maxNameLen], 
-               node.selfTime+node.totTime))
+               node.selfTime+node.childTime))
       for eid in self.edgeTable:
          edge = self.edgeTable[eid]
          print('{0}->{1} [label="{2}"]'.format(edge.caller.name[:maxNameLen],
@@ -65,19 +65,23 @@ class CallGraph(object):
    #
    # Output graph info in one libsvm-formatted data line
    # TODO: Add depth-limiting options
+   # Done: if all values end up 0, then don't output line at all
    #
    def outputLibSVMLine(self):
       # <label> <feature-id>:<feature-value> <feature-id>:<feature-value>
-      print("{0}".format(self.id), end="")
+      line = ""
       for nid in sorted(self.nodeTable):
          node = self.nodeTable[nid]
          if node.minDepth < 0: 
             node.getMinDepth()
          if node.minDepth > maxDepth: continue
-         print(' {0}:{1}'.format(node.id,
-               (node.selfTime+node.totTime)/self.totalExecutionTime), end="")
-         #      (node.selfTime+node.totTime)/self.totalExecutionTime), end="")
-      print("")
+         if node.selfTime+node.childTime < 0.00001: continue
+         line = "{0} {1}:{2:.4f}".format(line, node.id,
+                 node.selfTime+node.childTime)
+         #      (node.selfTime+node.childTime)/self.totalExecutionTime), end="")
+      if len(line) > 0:
+         print("{0} {1}".format(self.id,line))
+
    #
    # Output a function id->name mapping
    #
@@ -103,10 +107,17 @@ class CallGraph(object):
                   snode = self.nodeTable[sid]
                   break
          if snode is None:
+            print("No self function to subtract! ({0})".format(onode.name))
             continue
          # now merge stats from onode into snode
+         #print("\n\n\nBefore subtraction")
+         #snode.printMe()
          snode.subtractNodeData(onode)
+         #print("After subtraction")
+         #snode.printMe()
       # what do we do about edges?
+      return True
+
    #
    # merge another call graph's data into this one
    #
@@ -142,7 +153,7 @@ class Node(object):
    #
    # constructor
    #
-   def __init__(self,cg,name,fid,totTimePct,selfTime,totTime,numCalls):
+   def __init__(self,cg,name,fid,totTimePct,selfTime,childTime,numCalls):
       self.cg = cg  # call graph that we are part of
       self.name = cleanName(name)
       # incoming fid doesn't work, so replace it
@@ -150,7 +161,7 @@ class Node(object):
       self.id = fid
       self.totTimePct = totTimePct # from CG, %time column
       self.selfTime = selfTime     # from CG, self column (== flat self?)
-      self.totTime = totTime       # from CG, self+children?
+      self.childTime = childTime       # from CG, self+children?
       self.numCalls = numCalls     # from CG, called (== flat calls?)
       self.callerEdges = []
       self.childEdges = []
@@ -161,10 +172,10 @@ class Node(object):
    #
    # update function data if it already has an object
    #
-   def update(self,totTimePct,selfTime,totTime,numCalls):
+   def update(self,totTimePct,selfTime,childTime,numCalls):
       self.totTimePct = totTimePct
       self.selfTime = selfTime
-      self.totTime = totTime
+      self.childTime = childTime
       self.numCalls = numCalls
    #
    # update data from flat profile tuple (fpct,fstime,fcalls)
@@ -183,7 +194,7 @@ class Node(object):
    def printMe(self):
       print("Node: {0} {1}".format(self.id, self.name[:maxNameLen]))
       print("  stats: tot%:{0} self:{1} tot:{2} calls:{3}".format(
-         self.totTimePct, self.selfTime, self.totTime, self.numCalls))
+         self.totTimePct, self.selfTime, self.childTime, self.numCalls))
       print("  depth: {0}".format(self.getMinDepth()))
       print("  callers:")
       for e in self.callerEdges:
@@ -219,7 +230,7 @@ class Node(object):
       # just add pcts for now, factor will be applied later
       self.totTimePct = self.totTimePct + other.totTimePct
       self.selfTime = self.selfTime + other.selfTime
-      self.totTime = self.totTime + other.totTime
+      self.childTime = self.childTime + other.childTime
       self.numCalls = self.numCalls + other.numCalls
    #
    # subtract data from the same function in another call graph
@@ -228,7 +239,7 @@ class Node(object):
       # just add pcts for now, factor will be applied later
       #self.totTimePct = self.totTimePct - other.totTimePct   TODO ???
       self.selfTime = self.selfTime - other.selfTime
-      self.totTime = self.totTime - other.totTime
+      self.childTime = self.childTime - other.childTime
       self.numCalls = self.numCalls - other.numCalls
 
 #---------------------------------------------------------------------

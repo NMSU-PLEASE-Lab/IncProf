@@ -24,7 +24,7 @@ import CallGraph as cg
 
 debug = False
 doDot = False
-maxDepth = 20
+maxDepth = 3
 
 #---------------------------------------------------------------------
 # Read gprof data and create call graph objects
@@ -67,7 +67,7 @@ def createProfileGraph(filename,id):
 #---------------------------------------------------------------------
 # Process a call graph section
 # - incoming line is first line in section (a caller line)
-# - sections have caller lines, the function, then callees
+# - sections have caller lines, the function, and then callees
 #---------------------------------------------------------------------
 def processCallGraphSection(line, fileh, cgraph):
    isCallerLine = False
@@ -80,6 +80,8 @@ def processCallGraphSection(line, fileh, cgraph):
    while line.find("------------") < 0:
       if needLine:
          line = fileh.readline()
+         if line.find("------------") >= 0:
+            break
          needLine = False
       if debug: print("CG processing line: {0}".format(line), end='')
       # line beginning with "[#]" is the current function; lines before
@@ -95,8 +97,6 @@ def processCallGraphSection(line, fileh, cgraph):
             isFunctionLine = False
             isCalleeLine = True
             isCallerLine = False   # should already be
-         if line.find("------------") == 0:
-            isCalleeLine = False
       if debug: print("Line flags are: {0} {1} {2}".format(isCallerLine, isFunctionLine, isCalleeLine))
       # First line in section is the callee, or "<spontaneous>"
       if isCallerLine:
@@ -161,9 +161,9 @@ def processCallGraphSection(line, fileh, cgraph):
             funcName = v.group(7)
             #funcId = int(v.group(1)) not consistent
             funcId = cg.getFunctionID(funcName)
-            funcTotTimePct = 0.0
-            funcSelfTime = float(v.group(2))
-            funcChildrenTime = float(v.group(3))
+            funcTotTimePct = float(v.group(2))
+            funcSelfTime = float(v.group(3))
+            funcChildrenTime = float(v.group(4))
             funcNumCalls = int(v.group(5))
             done = True
          # line like "[1]     95.9    0.00    0.47                 main [1]"
@@ -212,34 +212,37 @@ def processCallGraphSection(line, fileh, cgraph):
                 childId, childSelfTime, childChildrenTime, childNumCalls,
                 childTotCalls))
          needLine = True
-      else:  # must be end of section
-         if debug: print("do end of section {0}".format(line))
-         # for now, ignore child info (not saved anyways)
-         isCallerLine = False
-         isFunctionLine = False
-         isCalleeLine = False
-         # limit function nodes to only those above a threshhold
-         # TODO needs more work, and generalization
-         if (funcSelfTime+funcChildrenTime) / cgraph.totalExecutionTime < cgraph.functionTimeThreshold:
-            continue
-         if not funcId in cgraph.nodeTable:
-            n = cg.Node(cgraph,funcName,funcId, funcTotTimePct, funcSelfTime,
-                     funcChildrenTime, funcNumCalls)
-         else:
-            n = cgraph.nodeTable[funcId]
-            n.update(funcTotTimePct, funcSelfTime, funcChildrenTime,
-                     funcNumCalls)
-         if funcName in cgraph.flatProfileData:
-            n.updateFlatData(cgraph.flatProfileData[funcName])
-         for caller in callers:
-            if not caller['id'] in cgraph.nodeTable:
-               n = cg.Node(cgraph,caller['name'],caller['id'],0,0,0,0)
-            c = cg.Edge(cgraph,caller['id'],funcId,caller['numcalls'],caller['totcalls'])
-         # do not set needLine since we'll return to caller after this
+   # END loop while line.find("------------") < 0:
+   if debug: print("do end of section {0}".format(line))
+   # limit function nodes to only those above a threshhold
+   # TODO needs more work, and generalization
+   # - assumes flat profile came first (always does)
+   if (funcSelfTime+funcChildrenTime) / cgraph.totalExecutionTime <  cgraph.functionTimeThreshold:
+      return False
+   if not funcId in cgraph.nodeTable:
+      n = cg.Node(cgraph,funcName,funcId, funcTotTimePct, funcSelfTime,
+                  funcChildrenTime, funcNumCalls)
+   else:
+      n = cgraph.nodeTable[funcId]
+      n.update(funcTotTimePct, funcSelfTime, funcChildrenTime,
+               funcNumCalls)
+   if funcName in cgraph.flatProfileData:
+      n.updateFlatData(cgraph.flatProfileData[funcName])
+   for caller in callers:
+      if not caller['id'] in cgraph.nodeTable:
+         n = cg.Node(cgraph,caller['name'],caller['id'],0,0,0,0)
+      c = cg.Edge(cgraph,caller['id'],funcId,caller['numcalls'],caller['totcalls'])
+   return True
 
 #---------------------------------------------------------------------
 # Process one line in the flat profile data section
 # - lines are either full data lines or partial (short) data lines
+# Full:
+#  %   cumulative   self              self     total           
+# time   seconds   seconds    calls   s/call   s/call  name    
+# 58.67    291.42   291.42        1   291.42   291.89  void miniFE::cg_solve
+# Partial: does not have calls and call stats
+# -cumulative seconds is useful to track total execution time (last line)
 #---------------------------------------------------------------------
 def processFlatProfileLine(line, cgraph):
    totalExecutionTime = 0.0
@@ -248,9 +251,8 @@ def processFlatProfileLine(line, cgraph):
    # try to match full line first
    v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
    short = 0
-   if v != None:
-      funcName = v.group(7)
-   else:
+   if v == None:
+      # now try to match short line
       v = re.match("\s*(\d+\.\d+)\s*(\d+\.\d+)\s*(\d+\.\d+)\s*([^\n\r]*)", line)
       short = 1
    if v == None:
@@ -284,7 +286,7 @@ def reduceCGSequence(cgs, factor):
    for cgi in cgs:
       if count == 0:
          # start out new reduction call graph
-         print("start a new graph")
+         if debug: print("start a new graph")
          cg = copy.deepcopy(cgs[cgi])
          newcgs[newcgid] = cg
          newcgid= newcgid + 1
@@ -375,7 +377,8 @@ else:
       #   node = cgraph.nodeTable[n]
       #   node.printMe()
    if debug: print("Read {0} profiles...".format(maxind))
-   for i in range(1,maxind):
+   # CallGraph data must be subtracted starting at end!
+   for i in reversed(range(1,maxind)):
       cgs[i+1].subtractCallGraph(cgs[i])
    for i in range(maxind):
       if debug: print(cgs[i+1])

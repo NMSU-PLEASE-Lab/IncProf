@@ -290,7 +290,7 @@ def doKMeansClustering():
    
             # JEC for 2-val func data
             # m = int(f/10)
-            m = str(f)
+            m = str(f+1)
             if idmap != None and m in idmap:
                print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
             elif f < len(c):
@@ -320,7 +320,7 @@ def doKMeansClustering():
                r += 1
             # JEC for 2-val func data
             # m = int(f/10)
-            m = str(f)
+            m = str(f+1)
             if idmap != None and m in idmap:
                print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
             else:
