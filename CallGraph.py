@@ -14,6 +14,9 @@ def cleanName(name):
    trs = {32:95, 60:95, 62:95, 38:95, 42:95, 44:95, 58:95, 40:95, 41:95}
    return (name.translate(trs))
 
+#
+# Keep a function id->name mapping across all call graphs
+#
 functionIdMap = {}
 nextFunctionID = 0
 def getFunctionID(name):
@@ -24,6 +27,22 @@ def getFunctionID(name):
       functionIdMap[name] = nextFunctionID
       nextFunctionID += 1
    return functionIdMap[name]
+
+#
+# Output the function id->name mapping
+#
+def outputFunctionMap():
+   global functionIdMap
+   first = True
+   print("{")
+   for name in functionIdMap:
+      nid = functionIdMap[name]
+      if first:
+         print(' "{0}":"{1}"'.format(nid, name),end="")
+         first = False
+      else:
+         print(',\n "{0}":"{1}"'.format(nid, name),end="")
+   print("\n}")
 
 #---------------------------------------------------------------------
 # Top level object for a call graph

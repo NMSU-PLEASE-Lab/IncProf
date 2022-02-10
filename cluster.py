@@ -301,7 +301,10 @@ def doKMeansClustering():
          continue
       closestReal = findClosestRealDatapoint(X,c)
       normalize(c)
-      haveInstrumentation = False
+      # we should do: save up all functions
+      # that are not shared with other clusters, then iterate and find
+      # the one with the most time, or the shallowest one
+      potentialInstrFunc = []
       for f in range(len(c)):
          if c[f] > 0.00099:
       # search if the function exist in other clusters
@@ -316,9 +319,9 @@ def doKMeansClustering():
                   ex_list.append(r-1) # add the cluster number
                   #print "ex_list:", ex_list 
                r += 1
-            if len(ex_list) == 0 and not haveInstrumentation:
-               ex_list.append("Instrument here")
-               haveInstrumentation = True
+            if len(ex_list) == 0:
+               ex_list.append("possible instr")
+               potentialInstrFunc.append((f,c[f]))
             # JEC for 2-val func data
             # m = int(f/10)
             m = str(f+1)
@@ -328,6 +331,13 @@ def doKMeansClustering():
                print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
             else:
                print "unknown??",f
+      if len(potentialInstrFunc) > 0:
+         maxfd = potentialInstrFunc[0]
+         for fd in potentialInstrFunc:
+            if fd[1] > maxfd[1]:
+               maxfd = fd
+         fi = str(maxfd[0]+1)
+         print("Instrument function: {0}".format(idmap[fi][:30]))
       n += 1
    if bestk[0] == elbowk[0]:
       exit()
@@ -340,7 +350,10 @@ def doKMeansClustering():
          n += 1
          continue
       normalize(c)
-      haveInstrumentation = False
+      # we should do: save up all functions
+      # that are not shared with other clusters, then iterate and find
+      # the one with the most time, or the shallowest one
+      potentialInstrFunc = []
       for f in range(len(c)):
          if c[f] > 0.00099:
    
@@ -354,9 +367,9 @@ def doKMeansClustering():
                   ex_list.append(r-1) # add the cluster number
                   #print "ex_list:", ex_list
                r += 1
-            if len(ex_list) == 0 and not haveInstrumentation:
-               ex_list.append("Instrument here")
-               haveInstrumentation = True
+            if len(ex_list) == 0:
+               ex_list.append("possible instr")
+               potentialInstrFunc.append((f,c[f]))
             # JEC for 2-val func data
             # m = int(f/10)
             m = str(f+1)
@@ -364,6 +377,13 @@ def doKMeansClustering():
                print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
             else:
                print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
+      if len(potentialInstrFunc) > 0:
+         maxfd = potentialInstrFunc[0]
+         for fd in potentialInstrFunc:
+            if fd[1] > maxfd[1]:
+               maxfd = fd
+         fi = str(maxfd[0]+1)
+         print("Instrument function: {0}".format(idmap[fi][:30]))
       n += 1
 
 #

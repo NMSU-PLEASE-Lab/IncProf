@@ -391,7 +391,7 @@ else:
       if debug: print(cgs[i+1])
       cgs[i+1].outputLibSVMLine()
    print("------------------------------------------")
-   cgraph.outputFunctionMap()
+   cg.outputFunctionMap()
 
 exit(0)
 
