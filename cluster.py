@@ -264,6 +264,8 @@ def printClusterCentroidInfo(centroids,sizes):
                maxfd = fd
          fi = str(maxfd[0]+1)
          print("Instrument function: {0}".format(idMap[fi][:50]))
+         print("First Instrument fc: {0}".format(
+               idMap[str(potentialInstrFunc[0][0]+1)][:50]))
       # continue loop on next centroid
       n += 1
 
@@ -288,7 +290,9 @@ def doKMeansClustering():
       #if i==3 or i==4:
       #   c = sklearn.cluster.k_means(X,2,n_init=30)
       #else:
-      c = sklearn.cluster.k_means(X,i,n_init=30)
+      print "clustering K={0}".format(i)
+      c = sklearn.cluster.k_means(X,i,n_init=20)
+      print "  done"
       if basedist == 0:
          basedist = c[2]
       #print i, c[1], "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
@@ -342,6 +346,7 @@ def doKMeansClustering():
    printClusterCentroidInfo(centroids[bestk[0]-1],clSizeBest)
    if bestk[0] == elbowk[0]:
       exit()
+   print "------------------------------------------------------------------"
    print "Elbow K = ",elbowk[0],"Centroids"
    printClusterCentroidInfo(centroids[elbowk[0]-1],clSizeElbow)
 
@@ -373,17 +378,41 @@ def doDbscanClustering(fnames):
       print c[1]
       print "Cluster core indices"
       print c[0]
+      clusters = []
       print "Estimated centroids"
       for i in range(numclusters):
-         points = []
+         points = np.ndarray(X[0].shape)
+         csize = 0
          for l in range(len(c[1])):
-            if c[1][l] == i: points.append(X[l])
+            if c[1][l] == i:
+               points += X[l]
+               csize += 1
+         if csize < 8: continue
          #points = c[1][labels==i,:]
          #print points
          #centroid = np.mean(points) 
          #print(centroid)
-         print np.mean(points,axis=0)
+         points = points / csize
+         #centroid = np.mean(points,axis=0)
+         centroid = []
+         for j in range(points.shape[1]):
+            centroid.append(points[0,j])
+         print "Cluster {0},{2}: {3} {1}".format(i+1,points,csize,points.shape)
+         #print "   centroid: {0}".format(centroid)
+         clusters.append(centroid)
       #print np.mean(X[0])
+      for cluster in clusters:
+         print "Cluster: "
+         for fi in range(len(cluster)):
+             if cluster[fi] < 0.009: continue
+             potSite = True
+             for other in clusters:
+                if other == cluster: continue
+                if other[fi] > 0.009: potSite = False
+             if potSite:
+                print "  Can instrument: {0}:{1}".format(fi,
+                       idMap[str(fi+1)][:40])
+                
    return True 
    
 
@@ -418,8 +447,23 @@ if idmapFilename != "":
 
 #
 # Initialize SciKit data structures
+# TODO: What about data normalization?
+# pp.normalize produces something  that kmeans segfaults on!
+# - no idea how to fix this
+# StandardScaler works but then how to interpret results?
+# - hard to select instrumentation site
 #
 X, y = sklearn.datasets.load_svmlight_file(dataFilename)
+# normalize columns (features)
+#print "X RAW-------------------------------------------------"
+#print X
+#X = sklearn.preprocessing.normalize(X,norm="l2",axis=0)
+#print "X NORM------------------------------------------------"
+#scaler = sklearn.preprocessing.StandardScaler(copy=False,with_mean=False)
+#scaler.fit(X)
+#>>> print(scaler.transform(data))
+#print "X SCALED------------------------------------------------"
+#print X
 
 #
 # OBSOLETE: if K is given, do only this K
@@ -434,6 +478,6 @@ if debug:
    print X
    print y
 
-doKMeansClustering()
-#doDbscanClustering(0)
+#doKMeansClustering()
+doDbscanClustering(0)
 

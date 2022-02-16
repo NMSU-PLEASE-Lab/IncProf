@@ -31,7 +31,7 @@ def getFunctionID(name):
 #
 # Output the function id->name mapping, sorted
 #
-def outputFunctionMap(filename):
+def outputFunctionMap(filename, factor=1, replicate=1):
    global functionIdMap
    names = {}
    # make list of IDs to sort, and id->name map
@@ -45,11 +45,12 @@ def outputFunctionMap(filename):
    fout.write("{")
    for nid in sorted(ids):
       name = names[nid]
-      if first:
-         fout.write(' "{0}":"{1}"'.format(nid, name))
-         first = False
-      else:
-         fout.write(',\n "{0}":"{1}"'.format(nid, name))
+      for rep in range(replicate):
+         if first:
+            fout.write(' "{0}":"{1}"'.format(int((nid*factor)+rep), name))
+            first = False
+         else:
+            fout.write(',\n "{0}":"{1}"'.format(int((nid*factor)+rep), name))
    fout.write("\n}")
    fout.close()
 
@@ -58,12 +59,13 @@ def outputFunctionMap(filename):
 # - filename is name of output file
 # - cgs is a dictionary of call graphs, indexed
 #   by integers, not necessarily consecutive
+# mode is "time" or "timecalls"
 #
-def outputSVMData(filename,cgs):
+def outputSVMData(filename,cgs,mode):
    fout = open(filename,"w")
    for i in sorted(cgs):
       if debug: print(cgs[i])
-      cgs[i].outputLibSVMLine(fout)
+      cgs[i].outputLibSVMLine(fout,mode)
    fout.close()
 
 #---------------------------------------------------------------------
@@ -108,7 +110,8 @@ class CallGraph(object):
    # TODO: Add depth-limiting options
    # Done: if all values end up 0, then don't output line at all
    #
-   def outputLibSVMLine(self,fout):
+   # ever?(node.selfTime+node.childTime)/self.totalExecutionTime), end="")
+   def outputLibSVMLine(self,fout,mode="time"):
       # <label> <feature-id>:<feature-value> <feature-id>:<feature-value>
       line = ""
       for nid in sorted(self.nodeTable):
@@ -117,14 +120,18 @@ class CallGraph(object):
             node.getMinDepth()
          if node.minDepth > maxDepth: continue
          if node.selfTime+node.childTime < 0.00001: continue
-         line = "{0} {1}:{2:.4f}".format(line, node.id,
-                 node.selfTime+node.childTime)
-         #      (node.selfTime+node.childTime)/self.totalExecutionTime), end="")
+         if mode == "time":
+            line = "{0} {1}:{2:.4f}".format(line, node.id,
+                    node.selfTime+node.childTime)
+         elif mode == "timecalls":
+            line = "{0} {1}:{2:.4f} {3}:{4:.4f}".format(line,
+                int(node.id*3), node.selfTime+node.childTime, 
+                int(node.id*3+1), node.numCalls)
       if len(line) > 0:
          fout.write("{0} {1}\n".format(self.id,line))
 
    #
-   # Output a function id->name mapping
+   # NOT USED: Output a function id->name mapping
    #
    def outputFunctionMap(self):
       print("{")
@@ -132,6 +139,7 @@ class CallGraph(object):
          node = self.nodeTable[nid]
          print('"{0}":"{1}",'.format(node.id, node.name))
       print("}")
+
    #
    # subtract another call graph's data from this one
    # - used to create interval data rather than cumulative

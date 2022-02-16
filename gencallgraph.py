@@ -313,12 +313,14 @@ argParser.add_argument('--text', action='store', default='gprof.txt', metavar='<
 argParser.add_argument('--bin', action='store', nargs=2, metavar='<filename>', help='invoke gprof on <exectuable gmon.out> pair')
 argParser.add_argument('--bindir', action='store', nargs=2, metavar='<name>', help='invoke gprof on all profiles in <exectuable directory> pair')
 argParser.add_argument('--dirpat', action='store', default=".*\.(\d+)", help='regex for filename parsing, must have one (\d+)')
+argParser.add_argument('--mode', action='store', default="time", help="SVM data: either 'time' or 'timecalls'")
 args = argParser.parse_args()
 debug = args.debug
 doDot = args.dot
 textFile = args.text
 maxDepth = args.depth
 dirPattern = args.dirpat
+mode = args.mode
 
 if args.bindir is None:
    #
@@ -358,7 +360,7 @@ else:
          continue
       v = re.match(dirPattern,f.name)
       if v is None:
-         print("filename {0} does not end with a number".format(f.name))
+         print("filename {0} does not match pattern |{1}|".format(f.name, dirPattern))
          continue
       ind = int(v.group(1))
       proFile = "{0}/{1}".format(args.bindir[1],f.name)
@@ -368,6 +370,7 @@ else:
                 textFile))
       cgraph = createProfileGraph(textFile,ind)
       if cgraph is None:
+         print("No profile info could be read for {0}".format(proFile))
          continue
       os.system("rm -f {0}".format(textFile))
       cgs[ind] = cgraph
@@ -376,11 +379,11 @@ else:
       #for n in cgraph.nodeTable:
       #   node = cgraph.nodeTable[n]
       #   node.printMe()
-   if debug: print("Read {0} profiles...".format(maxind))
+   print("Read {0} profiles...".format(maxind))
    # CallGraph data must be subtracted starting at end!
    for i in reversed(range(1,maxind)):
       cgs[i+1].subtractCallGraph(cgs[i])
-   CallGraph.outputSVMData("cldata.svm",cgs)
+   CallGraph.outputSVMData("cldata.svm",cgs,mode)
    #for i in range(maxind):
    #   if debug: print(cgs[i+1])
    #   cgs[i+1].outputLibSVMLine()
@@ -388,12 +391,15 @@ else:
    factor = 2
    # just testing reduction here below
    cgs = reduceCGSequence(cgs, factor)
-   CallGraph.outputSVMData("cldata2.svm",cgs)
+   CallGraph.outputSVMData("cldata2.svm",cgs,mode)
    #for i in range(math.ceil(maxind/factor)):
    #   if debug: print(cgs[i+1])
    #   cgs[i+1].outputLibSVMLine()
    #print("------------------------------------------")
-   CallGraph.outputFunctionMap("names.map")
+   if mode == "timecalls": 
+      CallGraph.outputFunctionMap("names.map",3,2)
+   else:
+      CallGraph.outputFunctionMap("names.map",1,1)
 
 exit(0)
 
