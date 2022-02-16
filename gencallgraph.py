@@ -20,7 +20,7 @@ import glob
 import argparse
 import copy
 import math
-import CallGraph as cg
+import CallGraph
 
 debug = False
 doDot = False
@@ -37,7 +37,7 @@ def createProfileGraph(filename,id):
    if inf is None:
       print("ERROR: no such file ({0})".format(filename))
       return None
-   cgraph = cg.CallGraph(id)
+   cgraph = CallGraph.CallGraph(id)
    while True:
       line = inf.readline()
       if inFlatTable:
@@ -106,7 +106,7 @@ def processCallGraphSection(line, fileh, cgraph):
          # match line like "                   <spontaneous>"
          if None != re.match("\s+<spontaneous>",line):
             caller['name'] = "_spontaneous_"
-            caller['id'] = cg.getFunctionID(caller['name'])
+            caller['id'] = CallGraph.getFunctionID(caller['name'])
             caller['selftime'] = 0.0
             caller['childtime'] = 0.0
             caller['numcalls'] = 0
@@ -117,7 +117,7 @@ def processCallGraphSection(line, fileh, cgraph):
          if v is not None and done is not True:
             caller['name'] = v.group(5)
             #caller['id'] = int(v.group(6)) not consistent
-            caller['id'] = cg.getFunctionID(v.group(5))
+            caller['id'] = CallGraph.getFunctionID(v.group(5))
             caller['selftime'] = float(v.group(1))
             caller['childtime'] = float(v.group(2))
             caller['numcalls'] = int(v.group(3))
@@ -128,7 +128,7 @@ def processCallGraphSection(line, fileh, cgraph):
          if v is not None and done is not True:
             caller['name'] = v.group(2)
             #caller['id'] = int(v.group(3)) not consistent
-            caller['id'] = cg.getFunctionID(v.group(2))
+            caller['id'] = CallGraph.getFunctionID(v.group(2))
             caller['selftime'] = 0.0
             caller['childtime'] = 0.0
             caller['numcalls'] = int(v.group(1))
@@ -149,7 +149,7 @@ def processCallGraphSection(line, fileh, cgraph):
          if v is not None: # and len(v.group) == 6:
             funcName = v.group(6)
             #funcId = int(v.group(1)) not consistent
-            funcId = cg.getFunctionID(funcName)
+            funcId = CallGraph.getFunctionID(funcName)
             funcTotTimePct = float(v.group(2))
             funcSelfTime = float(v.group(3))
             funcChildrenTime = float(v.group(4))
@@ -160,7 +160,7 @@ def processCallGraphSection(line, fileh, cgraph):
          if v is not None and done is not True:
             funcName = v.group(7)
             #funcId = int(v.group(1)) not consistent
-            funcId = cg.getFunctionID(funcName)
+            funcId = CallGraph.getFunctionID(funcName)
             funcTotTimePct = float(v.group(2))
             funcSelfTime = float(v.group(3))
             funcChildrenTime = float(v.group(4))
@@ -171,7 +171,7 @@ def processCallGraphSection(line, fileh, cgraph):
          if v is not None and done is not True:
             funcName = v.group(5)
             #funcId = int(v.group(1)) not consistent
-            funcId = cg.getFunctionID(funcName)
+            funcId = CallGraph.getFunctionID(funcName)
             funcTotTimePct = float(v.group(2))
             funcSelfTime = float(v.group(3))
             funcChildrenTime = float(v.group(4))
@@ -182,7 +182,7 @@ def processCallGraphSection(line, fileh, cgraph):
          if v is not None and done is not True:
             funcName = v.group(6)
             #funcId = int(v.group(1)) not consistent
-            funcId = cg.getFunctionID(funcName)
+            funcId = CallGraph.getFunctionID(funcName)
             funcTotTimePct = 0.0
             funcSelfTime = float(v.group(2))
             funcChildrenTime = float(v.group(3))
@@ -203,7 +203,7 @@ def processCallGraphSection(line, fileh, cgraph):
             # with it for now, but maybe in the future
             childName = v.group(5)
             #childId = int(v.group(6)) not consistent
-            childId = cg.getFunctionID(childName)
+            childId = CallGraph.getFunctionID(childName)
             childSelfTime = float(v.group(1))
             childChildrenTime = float(v.group(2))
             childNumCalls = int(v.group(3))
@@ -220,7 +220,7 @@ def processCallGraphSection(line, fileh, cgraph):
    if (funcSelfTime+funcChildrenTime) / cgraph.totalExecutionTime <  cgraph.functionTimeThreshold:
       return False
    if not funcId in cgraph.nodeTable:
-      n = cg.Node(cgraph,funcName,funcId, funcTotTimePct, funcSelfTime,
+      n = CallGraph.Node(cgraph,funcName,funcId, funcTotTimePct, funcSelfTime,
                   funcChildrenTime, funcNumCalls)
    else:
       n = cgraph.nodeTable[funcId]
@@ -230,8 +230,8 @@ def processCallGraphSection(line, fileh, cgraph):
       n.updateFlatData(cgraph.flatProfileData[funcName])
    for caller in callers:
       if not caller['id'] in cgraph.nodeTable:
-         n = cg.Node(cgraph,caller['name'],caller['id'],0,0,0,0)
-      c = cg.Edge(cgraph,caller['id'],funcId,caller['numcalls'],caller['totcalls'])
+         n = CallGraph.Node(cgraph,caller['name'],caller['id'],0,0,0,0)
+      c = CallGraph.Edge(cgraph,caller['id'],funcId,caller['numcalls'],caller['totcalls'])
    return True
 
 #---------------------------------------------------------------------
@@ -380,18 +380,20 @@ else:
    # CallGraph data must be subtracted starting at end!
    for i in reversed(range(1,maxind)):
       cgs[i+1].subtractCallGraph(cgs[i])
-   for i in range(maxind):
-      if debug: print(cgs[i+1])
-      cgs[i+1].outputLibSVMLine()
-   print("------------------------------------------")
+   CallGraph.outputSVMData("cldata.svm",cgs)
+   #for i in range(maxind):
+   #   if debug: print(cgs[i+1])
+   #   cgs[i+1].outputLibSVMLine()
+   #print("------------------------------------------")
    factor = 2
    # just testing reduction here below
    cgs = reduceCGSequence(cgs, factor)
-   for i in range(math.ceil(maxind/factor)):
-      if debug: print(cgs[i+1])
-      cgs[i+1].outputLibSVMLine()
-   print("------------------------------------------")
-   cg.outputFunctionMap()
+   CallGraph.outputSVMData("cldata2.svm",cgs)
+   #for i in range(math.ceil(maxind/factor)):
+   #   if debug: print(cgs[i+1])
+   #   cgs[i+1].outputLibSVMLine()
+   #print("------------------------------------------")
+   CallGraph.outputFunctionMap("names.map")
 
 exit(0)
 

@@ -29,20 +29,42 @@ def getFunctionID(name):
    return functionIdMap[name]
 
 #
-# Output the function id->name mapping
+# Output the function id->name mapping, sorted
 #
-def outputFunctionMap():
+def outputFunctionMap(filename):
    global functionIdMap
-   first = True
-   print("{")
+   names = {}
+   # make list of IDs to sort, and id->name map
+   ids = []
    for name in functionIdMap:
       nid = functionIdMap[name]
+      ids.append(nid)
+      names[nid] = name
+   fout = open(filename,"w")
+   first = True
+   fout.write("{")
+   for nid in sorted(ids):
+      name = names[nid]
       if first:
-         print(' "{0}":"{1}"'.format(nid, name),end="")
+         fout.write(' "{0}":"{1}"'.format(nid, name))
          first = False
       else:
-         print(',\n "{0}":"{1}"'.format(nid, name),end="")
-   print("\n}")
+         fout.write(',\n "{0}":"{1}"'.format(nid, name))
+   fout.write("\n}")
+   fout.close()
+
+#
+# Output libSVM formatted data for a CG set
+# - filename is name of output file
+# - cgs is a dictionary of call graphs, indexed
+#   by integers, not necessarily consecutive
+#
+def outputSVMData(filename,cgs):
+   fout = open(filename,"w")
+   for i in sorted(cgs):
+      if debug: print(cgs[i])
+      cgs[i].outputLibSVMLine(fout)
+   fout.close()
 
 #---------------------------------------------------------------------
 # Top level object for a call graph
@@ -86,7 +108,7 @@ class CallGraph(object):
    # TODO: Add depth-limiting options
    # Done: if all values end up 0, then don't output line at all
    #
-   def outputLibSVMLine(self):
+   def outputLibSVMLine(self,fout):
       # <label> <feature-id>:<feature-value> <feature-id>:<feature-value>
       line = ""
       for nid in sorted(self.nodeTable):
@@ -99,7 +121,7 @@ class CallGraph(object):
                  node.selfTime+node.childTime)
          #      (node.selfTime+node.childTime)/self.totalExecutionTime), end="")
       if len(line) > 0:
-         print("{0} {1}".format(self.id,line))
+         fout.write("{0} {1}\n".format(self.id,line))
 
    #
    # Output a function id->name mapping

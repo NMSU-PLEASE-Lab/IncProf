@@ -1,12 +1,14 @@
 #!/usr/bin/python
-#
+#--------------------------------------------------------------
 # Run k-means clustering over a data file in libsvm format using Python SKLearn
 # - this script runs clustering for k = 1..8, outputs the results, and also tries
 #   to infer the "best k" result for clustering
 # - we use this to decide which samples of execution belong to the same phase
 #
 # Usage: program <input-file> [idmap-file] [flip]
+#--------------------------------------------------------------
 
+#--------------------------------------------------------------
 # The input file is in "libsvm" format, described below. The idmap file, if
 # given, is a JSON-formatted file that can be read in as a Python dictionary,
 # the keys of which are the index values in the input file, and the values
@@ -15,7 +17,7 @@
 # can be made. If the third argument is the string "flip", then the idmap
 # key-value pairs were reversed, and the whole thing is flipped (values
 # become keys, and vice versa).
-
+#
 # LIBSVM format
 # https://stats.stackexchange.com/questions/61328/libsvm-data-format
 #    The format of training and testing data file is:
@@ -32,6 +34,7 @@
 #    Indices must be in ASCENDING order. Labels in the testing file are 
 #    only used to calculate accuracy or errors. If they are unknown, just 
 #    fill the first column with any numbers.
+#--------------------------------------------------------------
 
 # http://scikit-learn.org/stable/datasets/index.html#datasets
 #The dataset generation functions and the svmlight loader share a simplistic 
@@ -70,10 +73,11 @@ optClusterParams = [ \
 ( 1.000, 0.266, 0.128, 0.081, 0.059, 0.046, 0.035, 0.033 ), \
 ( 1.000, 0.259, 0.124, 0.074, 0.054, 0.043, 0.034, 0.027 ) ]
 
-#
+#--------------------------------------------------------------
 # Normalize a list of real numbers
 # - used to show relative importance of each value in a data vector
 # - assumes positive???
+#--------------------------------------------------------------
 def normalize(vals):
    max = -9999999.0
    for v in vals:
@@ -82,9 +86,9 @@ def normalize(vals):
    for i in range(len(vals)):
       vals[i] = vals[i] / max
       
-#
+#--------------------------------------------------------------
 # Load the ID Map file (function int -> name mapping, possibly backwards)
-#
+#--------------------------------------------------------------
 def loadIdMap(filename,flip):
    idmap = {}
    f = open(filename)
@@ -102,12 +106,12 @@ def loadIdMap(filename,flip):
    else:
       return nmap
 
-#
+#--------------------------------------------------------------
 # Idea: generate ideal clustering parameters from synthetic data (above)
 # and then compare numbers from real data and find best row match. Works
 # kinda ok but is sensitive to std-dev of generated cluster data. If dev
 # of real is lower, it selects too many clusters
-#
+#--------------------------------------------------------------
 def findOptimalK (clParams):
    dist = []
    for i in range(0,8):
@@ -131,9 +135,9 @@ def findOptimalK (clParams):
    # return two different selections for 2 tholds
    return (mink, round(mind,3), amink, round(amind,3))
 
-#
+#--------------------------------------------------------------
 # Try elbow method (compare slopes at point)
-#
+#--------------------------------------------------------------
 def findOptKElbow(clParams):
    maxd = 0
    maxk = 0
@@ -158,10 +162,10 @@ def findOptKElbow(clParams):
    # return two selections based on thresholds
    return (maxk, round(maxd,3), amaxk, round(amaxd,3))
 
-#
+#--------------------------------------------------------------
 # Find the closest interval data point to a cluster centroid
 # - X is a csr_matrix and so behaves a bit weirdly
-#
+#--------------------------------------------------------------
 def findClosestRealDatapoint(X,centroid):
   print("Find closest real data point------------------------")
   dim1 = X.shape[0] # num of elements (intervals) in X
@@ -189,9 +193,9 @@ def findClosestRealDatapoint(X,centroid):
   print("END closest real data point------------------------")
   return True
 
-##
-#
-#
+#--------------------------------------------------------------
+# counts how many datapoints are in a cluster
+#--------------------------------------------------------------
 def countClusterMagnitude(clusterId, labeledData):
    size = 0
    for i in labeledData:
@@ -200,9 +204,72 @@ def countClusterMagnitude(clusterId, labeledData):
          size += 1
    return size
 
-#
+#--------------------------------------------------------------
+# Print out info on clusters based on centroids
+# - support KMeans clustering; use for multiple K choices
+# - also identifies instrumentation site by finding data
+#   dimension (attribute) that a cluster has significantly but
+#   that is not shared by other clusters
+#--------------------------------------------------------------
+def printClusterCentroidInfo(centroids,sizes):
+   n = 1
+   for c in centroids: 
+      print "Cluster",n-1,":"
+      print "  size = {0}".format(sizes[n-1])
+      # skip small clusters
+      if sizes[n-1] < 5: # genericise this size threshold
+         n += 1
+         continue
+      closestReal = findClosestRealDatapoint(X,c)
+      normalize(c) # is already???
+      # we should do: save up all functions
+      # that are not shared with other clusters, then iterate and find
+      # the one with the most time, or the shallowest one
+      potentialInstrFunc = []
+      # iterate through data attributes of centroid (functions, for us)
+      for f in range(len(c)):
+         if c[f] > 0.0099: # limit to active functions
+            # search if the function exist in other clusters
+            # TODO: find a better way to do it
+            # JEC: why is this comment between the if stmt and r=1????
+            r = 1
+            # JEC TODO: I have no idea the proper indent below here (w/ tabs)
+            existsIn = [] #exist in other cluster list
+            for c1 in centroids:
+               normalize(c1)
+               if r != n and c1[f] > 0.099 and sizes[r-1] > 5:
+                  existsIn.append(r-1) # add the cluster number
+                  #print "existsIn:", existsIn 
+               r += 1
+            if len(existsIn) == 0:
+               # only exists in this cluster, so a possible instr site
+               existsIn.append("possible instr")
+               potentialInstrFunc.append((f,c[f]))
+            # JEC for 2-val func data, was m = int(f/10) but 
+            # the id map file should handle this directly
+            m = str(f+1) # centroid indices are off by one
+            if idMap != None and m in idMap:
+               print "   {0:d}: {1:.3f}  {2}  {3}".format(f, c[f],
+                     idMap[m][:30],existsIn)
+            elif f < len(c):
+               print "   {0:d}: {1:.3f}  {2}".format(f,c[f],existsIn)
+            else:
+               print "unknown??",f
+      # if we have potential instrumentation sites, pick the one
+      # with a highest data value
+      if len(potentialInstrFunc) > 0:
+         maxfd = potentialInstrFunc[0]
+         for fd in potentialInstrFunc:
+            if fd[1] > maxfd[1]:
+               maxfd = fd
+         fi = str(maxfd[0]+1)
+         print("Instrument function: {0}".format(idMap[fi][:50]))
+      # continue loop on next centroid
+      n += 1
+
+#--------------------------------------------------------------
 # Do KMeans clustering and print results
-#
+#--------------------------------------------------------------
 def doKMeansClustering():
    centroids = []
    cld = []
@@ -234,7 +301,7 @@ def doKMeansClustering():
    bestk = findOptimalK(clparms)
    elbowk = findOptKElbow(clparms)
    print "bestK:", bestk, "elbowK:", elbowk
-   
+   # output traces of intervals and what clusters they belong in
    felbowk = open('cluster.elbowk', 'w')
    fbestk = open('cluster.bestk', 'w')
    #
@@ -249,11 +316,7 @@ def doKMeansClustering():
       print "{0:3d}:".format(j),
       for i in range(0,8):
          print cld[i][j],
-   
-         #
          # print cluster data in a seprate file
-         #
-   
          # Print the the elbowk cluster elements vertically
          if i == (elbowk[0] - 1):
             felbowk.write("{0},{1}\n".format(j, cld[i][j]))
@@ -261,21 +324,8 @@ def doKMeansClustering():
          if i == (bestk[0] - 1):
             fbestk.write("{0},{1}\n".format(j, cld[i][j]))
       print
-   
    felbowk.close()
    fbestk.close()
-   
-   #
-   # Load Id Map if available
-   idmap = None
-   if idmapFilename != "":
-      idmap = loadIdMap(idmapFilename,flip)
-      if debug:
-         print idmap
-   
-   #print "idmap"
-   #print idmap
-
    # compute sizes of clustersin best and elbow
    clSizeBest = []
    n = 0
@@ -287,108 +337,18 @@ def doKMeansClustering():
    for c in centroids[elbowk[0]-1]: 
       clSizeElbow.append(countClusterMagnitude(n, cld[elbowk[0]-1]))
       n += 1
-
-   #
-   # Print out characteristics of cluster centroids for bestK and elbowK
-   #
+   # Print out info based on two ideal clustering counts
    print "'Optimal' K = ",bestk[0],"Centroids"
-   n = 1
-   for c in centroids[bestk[0]-1]: 
-      print "Cluster",n-1,":"
-      print "  size = {0}".format(clSizeBest[n-1])
-      if clSizeBest[n-1] < 5:
-         n += 1
-         continue
-      closestReal = findClosestRealDatapoint(X,c)
-      normalize(c)
-      # we should do: save up all functions
-      # that are not shared with other clusters, then iterate and find
-      # the one with the most time, or the shallowest one
-      potentialInstrFunc = []
-      for f in range(len(c)):
-         if c[f] > 0.00099:
-      # search if the function exist in other clusters
-      # TODO: find a better way to do it
-      # JEC: why is this comment between the if stmt and r=1????
-            r = 1
-      # JEC TODO: I have no idea the proper indentation below here (w/ tabs)
-            ex_list = [] #exist in other cluster list
-            for c1 in centroids[bestk[0]-1]:
-               normalize(c1)
-               if r != n and c1[f] > 0.099 and clSizeBest[r-1] > 5:
-                  ex_list.append(r-1) # add the cluster number
-                  #print "ex_list:", ex_list 
-               r += 1
-            if len(ex_list) == 0:
-               ex_list.append("possible instr")
-               potentialInstrFunc.append((f,c[f]))
-            # JEC for 2-val func data
-            # m = int(f/10)
-            m = str(f+1)
-            if idmap != None and m in idmap:
-               print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
-            elif f < len(c):
-               print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
-            else:
-               print "unknown??",f
-      if len(potentialInstrFunc) > 0:
-         maxfd = potentialInstrFunc[0]
-         for fd in potentialInstrFunc:
-            if fd[1] > maxfd[1]:
-               maxfd = fd
-         fi = str(maxfd[0]+1)
-         print("Instrument function: {0}".format(idmap[fi][:30]))
-      n += 1
+   printClusterCentroidInfo(centroids[bestk[0]-1],clSizeBest)
    if bestk[0] == elbowk[0]:
       exit()
    print "Elbow K = ",elbowk[0],"Centroids"
-   n = 1
-   for c in centroids[elbowk[0]-1]:
-      print "Cluster",n-1,":"
-      print "  size = {0}".format(clSizeElbow[n-1])
-      if clSizeElbow[n-1] < 5:
-         n += 1
-         continue
-      normalize(c)
-      # we should do: save up all functions
-      # that are not shared with other clusters, then iterate and find
-      # the one with the most time, or the shallowest one
-      potentialInstrFunc = []
-      for f in range(len(c)):
-         if c[f] > 0.00099:
-   
-            # search if the function exist in other clusters
-            # TODO: find a better way to do it
-            r = 1
-            ex_list = [] #exist in other cluster list
-            for c1 in centroids[elbowk[0]-1]:
-               normalize(c1)
-               if r != n and c1[f] > 0.099 and clSizeElbow[r-1] > 5:
-                  ex_list.append(r-1) # add the cluster number
-                  #print "ex_list:", ex_list
-               r += 1
-            if len(ex_list) == 0:
-               ex_list.append("possible instr")
-               potentialInstrFunc.append((f,c[f]))
-            # JEC for 2-val func data
-            # m = int(f/10)
-            m = str(f+1)
-            if idmap != None and m in idmap:
-               print "   {0:d}: {1:.3f}  {2}  {3}".format(f,c[f],idmap[m][:30],ex_list)
-            else:
-               print "   {0:d}: {1:.3f}  {2}".format(f,c[f],ex_list)
-      if len(potentialInstrFunc) > 0:
-         maxfd = potentialInstrFunc[0]
-         for fd in potentialInstrFunc:
-            if fd[1] > maxfd[1]:
-               maxfd = fd
-         fi = str(maxfd[0]+1)
-         print("Instrument function: {0}".format(idmap[fi][:30]))
-      n += 1
+   printClusterCentroidInfo(centroids[elbowk[0]-1],clSizeElbow)
 
-#
-# 
-#
+#--------------------------------------------------------------
+# Work in Progress: experiment with DBSCAN clustering
+# -- not sure yet how to process the results
+#--------------------------------------------------------------
 def doDbscanClustering(fnames):
    centroids = []
    cld = []
@@ -428,9 +388,9 @@ def doDbscanClustering(fnames):
    
 
 
-#
+#--------------------------------------------------------------
 # Main program
-#
+#--------------------------------------------------------------
 argc = len(sys.argv)
 if argc < 2 or argc > 4:
    print "Usage: {0} <libsvm-format-data-file> [idmap-file] [flip]".format(sys.argv[0])
@@ -443,6 +403,18 @@ if argc >= 3:
    idmapFilename = sys.argv[2]
 if argc == 4 and sys.argv[3] == "flip":
    flip = True
+
+#
+# Load Id Map if available
+idMap = None
+if idmapFilename != "":
+   idMap = loadIdMap(idmapFilename,flip)
+   if debug:
+      print idMap
+   
+#print "idmap"
+#print idMap
+
 
 #
 # Initialize SciKit data structures
