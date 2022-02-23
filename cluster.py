@@ -44,6 +44,7 @@
 import re
 import sys
 import os
+import argparse
 import sklearn.datasets
 import sklearn.cluster
 import math
@@ -349,6 +350,7 @@ def doKMeansClustering():
    print "------------------------------------------------------------------"
    print "Elbow K = ",elbowk[0],"Centroids"
    printClusterCentroidInfo(centroids[elbowk[0]-1],clSizeElbow)
+   findSignificantFeatures(centroids[elbowk[0]-1])
 
 #--------------------------------------------------------------
 # Work in Progress: experiment with DBSCAN clustering
@@ -361,6 +363,7 @@ def doDbscanClustering(fnames):
    basedist = 0
    epsilon = 0.1
    if False:
+      # this was just an experiment, should remove it I guess
       c = sklearn.cluster.DBSCAN(eps=epsilon, metric='manhattan', min_samples=2).fit(X)
       print "Clusters over data vector:"
       print c.labels_
@@ -412,26 +415,54 @@ def doDbscanClustering(fnames):
              if potSite:
                 print "  Can instrument: {0}:{1}".format(fi,
                        idMap[str(fi+1)][:40])
-                
+      findSignificantFeatures(clusters)
    return True 
-   
 
+#
+# Find most significant features that distinguish clusters
+# from each other, give the centroids of the clusters
+# 
+def findSignificantFeatures(clusters):
+   ci = 0
+   for cluster in clusters:
+      print "Cluster {0}:".format(ci)
+      # use difference rather than absolute distance because we
+      # want the most positive differences to stand out
+      totaldiffs = []
+      for i in range(len(cluster)):
+         totaldiffs.append(0.0)
+      for other in clusters:
+         if other is cluster:
+            continue
+         for i in range(len(cluster)):
+            totaldiffs[i] += cluster[i] - other[i];
+      maxI = 0
+      maxD = 0.0
+      for i in range(len(cluster)):
+         if totaldiffs[i] > maxD:
+            maxI = i
+            maxD = totaldiffs[i]
+      print "  DCan instrument: {0}:{1}".format(maxI,
+                       idMap[str(maxI+1)][:40])
+      ci += 1
+   return True
 
 #--------------------------------------------------------------
 # Main program
 #--------------------------------------------------------------
-argc = len(sys.argv)
-if argc < 2 or argc > 4:
-   print "Usage: {0} <libsvm-format-data-file> [idmap-file] [flip]".format(sys.argv[0])
-   exit(1)
-
-dataFilename = sys.argv[1]
-idmapFilename = ""
 flip = False
-if argc >= 3:
-   idmapFilename = sys.argv[2]
-if argc == 4 and sys.argv[3] == "flip":
-   flip = True
+argParser = argparse.ArgumentParser(description='Gprof data manipulator')
+argParser.add_argument('svmfile', metavar='SVM-file', type=str, help='name of SVM data file')
+argParser.add_argument('namefile', metavar='name-map-file', type=str, help='name of id->name mapping file')
+argParser.add_argument('--debug', action='store_true', help='turn on debugging info (default off)')
+argParser.add_argument('--flip', action='store_true', help='flip name map format (default: off)')
+argParser.add_argument('--alg', action='store', default='kmeans', metavar='<kmeans|dbscan>', help='clustering algorithm (default: kmeans)')
+args = argParser.parse_args()
+debug = args.debug
+algorithm = args.alg
+dataFilename = args.svmfile
+idmapFilename = args.namefile
+flip = args.flip
 
 #
 # Load Id Map if available
@@ -478,6 +509,8 @@ if debug:
    print X
    print y
 
-#doKMeansClustering()
-doDbscanClustering(0)
+if algorithm == "kmeans":
+   doKMeansClustering()
+elif algorithm == "dbscan":
+   doDbscanClustering(0)
 

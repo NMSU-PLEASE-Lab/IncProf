@@ -40,15 +40,21 @@ def createProfileGraph(filename,id):
    cgraph = CallGraph.CallGraph(id)
    while True:
       line = inf.readline()
+      if line == "":
+         break;
       if inFlatTable:
          # we leave the flat profile table when we see an empty line
          if len(line) < 2:
             inFlatTable = False
+            # if total execution time is 0.0, then skip this CG entirely
+            if cgraph.totalExecutionTime < 0.0001:
+               inf.close()
+               return None
             continue
          # else process the data line
          processFlatProfileLine(line, cgraph)
       if inCGTable:
-         # we leave the flat profile table when we see an empty line
+         # we leave the cg profile table when we see an empty line
          if len(line) < 2:
             inCGTable = False
             break  # leave the entire loop, since rest of file is not used
@@ -62,6 +68,10 @@ def createProfileGraph(filename,id):
       if None != re.match("index\s+%\s+time\s+self\s+children\s+called",line):
          inCGTable = True
          if debug: print("In CG Table")
+   inf.close()
+   # if we read to end, something went wrong
+   if line == "":
+      return None
    return cgraph
 
 #---------------------------------------------------------------------
@@ -365,7 +375,7 @@ else:
       ind = int(v.group(1))
       proFile = "{0}/{1}".format(args.bindir[1],f.name)
       textFile = "{0}.txt".format(proFile)
-      if debug: print("do gprof report generation ({0})".format(proFile))
+      print("do gprof report generation ({0})".format(proFile))
       os.system("gprof {0} {1} > {2}".format(args.bindir[0], proFile, 
                 textFile))
       cgraph = createProfileGraph(textFile,ind)
@@ -381,8 +391,13 @@ else:
       #   node.printMe()
    print("Read {0} profiles...".format(maxind))
    # CallGraph data must be subtracted starting at end!
+   # - might be missing some indices
+   inds = []
    for i in reversed(range(1,maxind)):
-      cgs[i+1].subtractCallGraph(cgs[i])
+      if i in cgs:
+         inds.append(i)
+   for i in range(len(inds)-1):
+      cgs[inds[i+1]].subtractCallGraph(cgs[inds[i]])
    CallGraph.outputSVMData("cldata.svm",cgs,mode)
    #for i in range(maxind):
    #   if debug: print(cgs[i+1])
