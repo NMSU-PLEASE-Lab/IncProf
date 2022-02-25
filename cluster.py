@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #--------------------------------------------------------------
 # Run k-means clustering over a data file in libsvm format using Python SKLearn
 # - this script runs clustering for k = 1..8, outputs the results, and also tries
@@ -171,7 +171,7 @@ def findClosestRealDatapoint(X,centroid):
   print("Find closest real data point------------------------")
   dim1 = X.shape[0] # num of elements (intervals) in X
   dim2 = X.shape[1] # num of attributes (functions w/ data)
-  #print "X shape {0}  centroid length {1}".format(X.shape,len(centroid))
+  #print("X shape {0}  centroid length {1}".format(X.shape,len(centroid)))
   mindist = 99999999.0
   mindp = 0
   # loop over all datapoints to find closest
@@ -215,8 +215,8 @@ def countClusterMagnitude(clusterId, labeledData):
 def printClusterCentroidInfo(centroids,sizes):
    n = 1
    for c in centroids: 
-      print "Cluster",n-1,":"
-      print "  size = {0}".format(sizes[n-1])
+      print("Cluster {0}:".format(n-1))
+      print("  size = {0}".format(sizes[n-1]))
       # skip small clusters
       if sizes[n-1] < 5: # genericise this size threshold
          n += 1
@@ -240,7 +240,7 @@ def printClusterCentroidInfo(centroids,sizes):
                normalize(c1)
                if r != n and c1[f] > 0.099 and sizes[r-1] > 5:
                   existsIn.append(r-1) # add the cluster number
-                  #print "existsIn:", existsIn 
+                  #print("existsIn: {0}".format(existsIn))
                r += 1
             if len(existsIn) == 0:
                # only exists in this cluster, so a possible instr site
@@ -250,12 +250,12 @@ def printClusterCentroidInfo(centroids,sizes):
             # the id map file should handle this directly
             m = str(f+1) # centroid indices are off by one
             if idMap != None and m in idMap:
-               print "   {0:d}: {1:.3f}  {2}  {3}".format(f, c[f],
-                     idMap[m][:30],existsIn)
+               print("   {0:d}: {1:.3f}  {2}  {3}".format(f, c[f],
+                     idMap[m][:30],existsIn))
             elif f < len(c):
-               print "   {0:d}: {1:.3f}  {2}".format(f,c[f],existsIn)
+               print("   {0:d}: {1:.3f}  {2}".format(f,c[f],existsIn))
             else:
-               print "unknown??",f
+               print("unknown?? {0}".format(f))
       # if we have potential instrumentation sites, pick the one
       # with a highest data value
       if len(potentialInstrFunc) > 0:
@@ -281,23 +281,23 @@ def doKMeansClustering():
    #
    # Run clustering for K=1 to K=8, save results and print metrics
    #
-   print "K  metrics"
+   print("K  metrics")
    for i in range(1,9):
-      #print "dtype", X.dtype
+      #print("dtype {0}".format(X.dtype))
       #for j in X:
       #   print j.shape,
-      #print ""
+      #print("")
       # k_means returns tuple of (?, data-cluster-id-list, total-pt-dist, ?)
       #if i==3 or i==4:
       #   c = sklearn.cluster.k_means(X,2,n_init=30)
       #else:
-      print "clustering K={0}".format(i)
+      print("clustering K={0}".format(i))
       c = sklearn.cluster.k_means(X,i,n_init=20)
-      print "  done"
+      print("  done")
       if basedist == 0:
          basedist = c[2]
       #print i, c[1], "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
-      print i, "{0:.4f},".format(c[2]), "{0:.4f},".format(c[2]*i*i*i)
+      print("{0} {1:.4f}, {2:.4f}".format(i,c[2],c[2]*i*i*i))
       centroids.append(c[0])
       cld.append(c[1])
       clparms.append(c[2]/basedist)
@@ -305,7 +305,7 @@ def doKMeansClustering():
    # Find "best" K using a couple of different methods, and print them
    bestk = findOptimalK(clparms)
    elbowk = findOptKElbow(clparms)
-   print "bestK:", bestk, "elbowK:", elbowk
+   print("bestK: {0}   elbowk: {1}".format(bestk, elbowk))
    # output traces of intervals and what clusters they belong in
    felbowk = open('cluster.elbowk', 'w')
    fbestk = open('cluster.bestk', 'w')
@@ -313,14 +313,14 @@ def doKMeansClustering():
    # Print the clustering of each data element vertically
    #
    #print elbowk[0]
-   print "V\K:",
+   print("V\K:",end="")
    for i in range(1,9):
-      print i,
-   print ""
+      print("{0} ".format(i), end="")
+   print("")
    for j in range(0,len(cld[0])):
-      print "{0:3d}:".format(j),
+      print("{0:3d}:".format(j),end="")
       for i in range(0,8):
-         print cld[i][j],
+         print(cld[i][j],end="")
          # print cluster data in a seprate file
          # Print the the elbowk cluster elements vertically
          if i == (elbowk[0] - 1):
@@ -343,12 +343,12 @@ def doKMeansClustering():
       clSizeElbow.append(countClusterMagnitude(n, cld[elbowk[0]-1]))
       n += 1
    # Print out info based on two ideal clustering counts
-   print "'Optimal' K = ",bestk[0],"Centroids"
+   print("'Optimal' K = {0} Centroids".format(bestk[0]))
    printClusterCentroidInfo(centroids[bestk[0]-1],clSizeBest)
    if bestk[0] == elbowk[0]:
       exit()
-   print "------------------------------------------------------------------"
-   print "Elbow K = ",elbowk[0],"Centroids"
+   print("------------------------------------------------------------------")
+   print("Elbow K = {0} Centroids".format(elbowk[0]))
    printClusterCentroidInfo(centroids[elbowk[0]-1],clSizeElbow)
    findSignificantFeatures(centroids[elbowk[0]-1])
 
@@ -361,28 +361,28 @@ def doDbscanClustering(fnames):
    cld = []
    clparms = []
    basedist = 0
-   epsilon = 0.1
+   epsilon = 0.07
    if False:
       # this was just an experiment, should remove it I guess
       c = sklearn.cluster.DBSCAN(eps=epsilon, metric='manhattan', min_samples=2).fit(X)
-      print "Clusters over data vector:"
-      print c.labels_
+      print("Clusters over data vector:")
+      print(c.labels_)
       #print c.n_features_in_
-      print "Cluster core indices"
-      print c.core_sample_indices_
-      print "Cluster Core Components"
-      print c.components_
+      print("Cluster core indices")
+      print(c.core_sample_indices_)
+      print("Cluster Core Components")
+      print(c.components_)
    else:
       c = sklearn.cluster.dbscan(X, eps=epsilon, min_samples=2, metric='manhattan')
-      print "Result len {0}".format(len(c))
+      print("Result len {0}".format(len(c)))
       numclusters = len(set(c[1])) - (1 if -1 in c[1] else 0)
-      print "Number of clusters: {0}".format(numclusters)
-      print "Clusters over data vector:"
-      print c[1]
-      print "Cluster core indices"
-      print c[0]
+      print("Number of clusters: {0}".format(numclusters))
+      print("Clusters over data vector:")
+      print(c[1])
+      print("Cluster core indices")
+      print(c[0])
       clusters = []
-      print "Estimated centroids"
+      print("Estimated centroids")
       for i in range(numclusters):
          points = np.ndarray(X[0].shape)
          csize = 0
@@ -390,7 +390,7 @@ def doDbscanClustering(fnames):
             if c[1][l] == i:
                points += X[l]
                csize += 1
-         if csize < 8: continue
+         if csize < 2: continue
          #points = c[1][labels==i,:]
          #print points
          #centroid = np.mean(points) 
@@ -400,12 +400,12 @@ def doDbscanClustering(fnames):
          centroid = []
          for j in range(points.shape[1]):
             centroid.append(points[0,j])
-         print "Cluster {0},{2}: {3} {1}".format(i+1,points,csize,points.shape)
-         #print "   centroid: {0}".format(centroid)
+         print("Cluster {0},{2}: {3} {1}".format(i+1,points,csize,points.shape))
+         #print("   centroid: {0}".format(centroid))
          clusters.append(centroid)
       #print np.mean(X[0])
       for cluster in clusters:
-         print "Cluster: "
+         print("Cluster: ")
          for fi in range(len(cluster)):
              if cluster[fi] < 0.009: continue
              potSite = True
@@ -413,8 +413,8 @@ def doDbscanClustering(fnames):
                 if other == cluster: continue
                 if other[fi] > 0.009: potSite = False
              if potSite:
-                print "  Can instrument: {0}:{1}".format(fi,
-                       idMap[str(fi+1)][:40])
+                print("  Can instrument: {0}:{1}".format(fi,
+                       idMap[str(fi+1)][:40]))
       findSignificantFeatures(clusters)
    return True 
 
@@ -425,7 +425,7 @@ def doDbscanClustering(fnames):
 def findSignificantFeatures(clusters):
    ci = 0
    for cluster in clusters:
-      print "Cluster {0}:".format(ci)
+      print("Cluster {0}:".format(ci))
       # use difference rather than absolute distance because we
       # want the most positive differences to stand out
       totaldiffs = []
@@ -442,8 +442,8 @@ def findSignificantFeatures(clusters):
          if totaldiffs[i] > maxD:
             maxI = i
             maxD = totaldiffs[i]
-      print "  DCan instrument: {0}:{1}".format(maxI,
-                       idMap[str(maxI+1)][:40])
+      print("  DCan instrument: {0}:{1}".format(maxI,
+                       idMap[str(maxI+1)][:40]))
       ci += 1
    return True
 
@@ -470,9 +470,9 @@ idMap = None
 if idmapFilename != "":
    idMap = loadIdMap(idmapFilename,flip)
    if debug:
-      print idMap
+      print(idMap)
    
-#print "idmap"
+#print("idmap")
 #print idMap
 
 
@@ -486,14 +486,14 @@ if idmapFilename != "":
 #
 X, y = sklearn.datasets.load_svmlight_file(dataFilename)
 # normalize columns (features)
-#print "X RAW-------------------------------------------------"
+#print("X RAW-------------------------------------------------"
 #print X
 #X = sklearn.preprocessing.normalize(X,norm="l2",axis=0)
-#print "X NORM------------------------------------------------"
+#print("X NORM------------------------------------------------"
 #scaler = sklearn.preprocessing.StandardScaler(copy=False,with_mean=False)
 #scaler.fit(X)
 #>>> print(scaler.transform(data))
-#print "X SCALED------------------------------------------------"
+#print("X SCALED------------------------------------------------"
 #print X
 
 #
@@ -506,8 +506,8 @@ X, y = sklearn.datasets.load_svmlight_file(dataFilename)
 #    exit()
 
 if debug:
-   print X
-   print y
+   print(X)
+   print(y)
 
 if algorithm == "kmeans":
    doKMeansClustering()
