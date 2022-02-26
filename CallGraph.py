@@ -79,7 +79,7 @@ class CallGraph(object):
    # constructor
    #
    def __init__(self,id):
-      self.functionTimeThreshold = 0.05
+      self.functionTimeThreshold = 0.01  # fraction of total
       # place to hold flat profile data until nodes are set up
       self.flatProfileData = {}
       self.totalExecutionTime = 0.001  # avoid divide by zero?
