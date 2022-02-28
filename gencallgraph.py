@@ -397,7 +397,8 @@ else:
       if i in cgs:
          inds.append(i)
    for i in range(len(inds)-1):
-      cgs[inds[i+1]].subtractCallGraph(cgs[inds[i]])
+      print("subtracting CG {0} from CG {1}".format(inds[i+1],inds[i]))
+      cgs[inds[i]].subtractCallGraph(cgs[inds[i+1]])
    CallGraph.outputSVMData("cldata.svm",cgs,mode)
    #for i in range(maxind):
    #   if debug: print(cgs[i+1])
