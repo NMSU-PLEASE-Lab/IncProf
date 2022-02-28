@@ -1,0 +1,11 @@
+
+https://gernotklingler.com/blog/gprof-valgrind-gperftools-evaluation-tools-application-level-cpu-profiling-linux/
+
+https://oprofile.sourceforge.io/news/
+
+http://poormansprofiler.org/  (using gdb)
+
+http://ltp.sourceforge.net/coverage/lcov.php
+
+http://sam.zoy.org/writings/programming/gprof.html  (using gprof with threads)
+

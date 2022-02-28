@@ -1,0 +1,33 @@
+--- orig/hist.c	2022-02-03 16:13:05.505151053 -0700
++++ hist.c	2022-02-03 16:16:38.228973775 -0700
+@@ -496,7 +496,7 @@
+ 	  _("name"));
+ }
+ 
+-
++/* JEC: flat profile line output */
+ static void
+ print_line (Sym *sym, double scale)
+ {
+@@ -505,17 +505,18 @@
+ 
+   accum_time += sym->hist.time;
+ 
++  /* JEC: added one digit of precision to all floats */
+   if (bsd_style_output)
+-    printf ("%5.1f %10.2f %8.2f",
++    printf ("%5.2f %10.3f %8.3f",
+ 	    total_time > 0.0 ? 100 * sym->hist.time / total_time : 0.0,
+ 	    accum_time / hz, sym->hist.time / hz);
+   else
+-    printf ("%6.2f %9.2f %8.2f",
++    printf ("%6.3f %9.3f %8.3f",
+ 	    total_time > 0.0 ? 100 * sym->hist.time / total_time : 0.0,
+ 	    accum_time / hz, sym->hist.time / hz);
+ 
+   if (sym->ncalls != 0)
+-    printf (" %8lu %8.2f %8.2f  ",
++    printf (" %8lu %8.3f %8.3f  ",
+ 	    sym->ncalls, scale * sym->hist.time / hz / sym->ncalls,
+ 	    scale * (sym->hist.time + sym->cg.child_time) / hz / sym->ncalls);
+   else

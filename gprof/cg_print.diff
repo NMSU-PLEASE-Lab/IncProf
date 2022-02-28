@@ -1,0 +1,67 @@
+--- orig/cg_print.c	2022-01-28 15:35:27.386574067 -0700
++++ cg_print.c	2022-01-28 15:38:16.674268130 -0700
+@@ -118,9 +118,10 @@
+   char buf[BUFSIZ];
+ 
+   sprintf (buf, "[%d]", cyc->cg.index);
++  /* JEC: added one digit of precision below */
+   printf (bsd_style_output
+-	  ? "%-6.6s %5.1f %7.2f %11.2f %7lu"
+-	  : "%-6.6s %5.1f %7.2f %7.2f %7lu", buf,
++	  ? "%-6.6s %5.2f %7.3f %11.3f %7lu"
++	  : "%-6.6s %5.2f %7.3f %7.3f %7lu", buf,
+ 	  100 * (cyc->cg.prop.self + cyc->cg.prop.child) / print_time,
+ 	  cyc->cg.prop.self / hz, cyc->cg.prop.child / hz, cyc->ncalls);
+ 
+@@ -196,9 +197,10 @@
+ 
+   for (member = cyc->cg.cyc.next; member; member = member->cg.cyc.next)
+     {
++      /* JEC: added one digit of precision below */
+       printf (bsd_style_output
+-	      ? "%6.6s %5.5s %7.2f %11.2f %7lu"
+-	      : "%6.6s %5.5s %7.2f %7.2f %7lu",
++	      ? "%6.6s %5.5s %7.3f %11.3f %7lu"
++	      : "%6.6s %5.5s %7.3f %7.3f %7lu",
+ 	      "", "", member->cg.prop.self / hz, member->cg.prop.child / hz,
+ 	      member->ncalls);
+ 
+@@ -381,9 +383,10 @@
+       else
+ 	{
+ 	  /* Regular parent of child.  */
++     /* JEC: added one digit of precision below */
+ 	  printf (bsd_style_output
+-		  ? "%6.6s %5.5s %7.2f %11.2f %7lu/%-7lu     "
+-		  : "%6.6s %5.5s %7.2f %7.2f %7lu/%-7lu     ",
++		  ? "%6.6s %5.5s %7.3f %11.3f %7lu/%-7lu     "
++		  : "%6.6s %5.5s %7.3f %7.3f %7lu/%-7lu     ",
+ 		  "", "",
+ 		  arc->time / hz, arc->child_time / hz,
+ 		  arc->count, cycle_head->ncalls);
+@@ -453,9 +456,10 @@
+       else
+ 	{
+ 	  /* Regular child of parent.  */
++     /* JEC: added one digit of precision below */
+ 	  printf (bsd_style_output
+-		  ? "%6.6s %5.5s %7.2f %11.2f %7lu/%-7lu     "
+-		  : "%6.6s %5.5s %7.2f %7.2f %7lu/%-7lu     ",
++		  ? "%6.6s %5.5s %7.3f %11.3f %7lu/%-7lu     "
++		  : "%6.6s %5.5s %7.3f %7.3f %7lu/%-7lu     ",
+ 		  "", "",
+ 		  arc->time / hz, arc->child_time / hz,
+ 		  arc->count, child->cg.cyc.head->ncalls);
+@@ -472,9 +476,10 @@
+   char buf[BUFSIZ];
+ 
+   sprintf (buf, "[%d]", np->cg.index);
++  /* JEC: added one digit of precision below */
+   printf (bsd_style_output
+-	  ? "%-6.6s %5.1f %7.2f %11.2f"
+-	  : "%-6.6s %5.1f %7.2f %7.2f", buf,
++	  ? "%-6.6s %5.2f %7.3f %11.3f"
++	  : "%-6.6s %5.2f %7.3f %7.3f", buf,
+ 	  100 * (np->cg.prop.self + np->cg.prop.child) / print_time,
+ 	  np->cg.prop.self / hz, np->cg.prop.child / hz);
+ 
