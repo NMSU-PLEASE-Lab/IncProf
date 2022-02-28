@@ -70,6 +70,7 @@ def gensvm(filename, fileNum):
    #try:
    #   print "1"
    if not(os.path.isfile(filename+".new")):
+       os.system("gprof -b {0} {1} > {1}.new".format(progFile,filename))
    inf = open("{0}.new".format(filename))
    inTable = False
    fdata = []

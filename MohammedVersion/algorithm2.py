@@ -110,10 +110,15 @@ def findOptKElbow(clParams):
 # Check the silhiuette average for each k and return the one
 # with max silhouette value
 def findOptKSilhout(silhouette):
+   # remove the first element to not select k=1 at the begining
+   new_silhouette = silhouette[1:]
+   print new_silhouette
    k = 0
-   for i, sill in enumerate(silhouette):
-      if sill == max(silhouette):
-         k = i+2
+   k = new_silhouette.index(max(new_silhouette)) + 2
+   for i, sill in enumerate(new_silhouette):
+      if sill == max(new_silhouette):
+         #k = i+2
+         pass
    return(k)
 #------------------------------end of findOptKSilhout-----------------------------------------------#
 
@@ -251,7 +256,7 @@ def findInstPoint(Clusters,clust):
           for f in inter[:-1]:
              tmp3.append((f[0],f[1],f[3]))
           # sort the functions first by the number of calls (ascending) and then by rank (descending)
-          tmp3.sort(key=lambda x:(x[1],-x[2]),reverse=False)
+          tmp3.sort(key=lambda x:x[1])#,reverse=False)
           # take the topmost function from this sort as the function to instrument in order to cover this interval
           f = tmp3[0]
           p = []
@@ -460,6 +465,7 @@ kmeanrun = runKmeans(X,range_n_clusters)
 interias = kmeanrun[3]
 distortion = kmeanrun[4]
 silhouette = kmeanrun[5]
+print(silhouette)
 # Check the optimal (elbow method) using kneelocator, not used (depuging)
 #from kneed import KneeLocator
 #kn = KneeLocator(range_n_clusters, interias, curve='convex', direction='decreasing')
@@ -469,6 +475,7 @@ if method == "elbow":
    optK = findOptKElbow(kmeanrun[2])[0]
 else:
    optK = findOptKSilhout(silhouette)
+#optK = 4
 rank = findRank(rfile)
 clustdist = kmeanrun[1]
 distances = clustdist[optK-1]
@@ -491,7 +498,7 @@ pathToOptK.append(optK)
 
 # If the produced phases are overlapped, decrement optimal k by 1
 # and try to reproduce phases again
-while(overlapped and optK>1):
+"""while(overlapped and optK>1):
    optK=optK -1
    pathToOptK.append(optK)
    distances = clustdist[optK-1]
@@ -507,7 +514,7 @@ while(overlapped and optK>1):
    Functions = P1[3]
 
    overlapped = isOverlapped(Phases,clust)
-   phaseCov,fullCov = findCoverage(Functions,Allinter)
+   phaseCov,fullCov = findCoverage(Functions,Allinter)"""
 
 # print min(distances[0])
 #indices = [i for i, x in enumerate(distances) if x == min(distances)]
