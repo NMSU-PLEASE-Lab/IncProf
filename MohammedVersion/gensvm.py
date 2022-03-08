@@ -125,7 +125,7 @@ def gensvm(filename, fileNum):
                fid = funcIDMap[v.group(7)]
             else:
                # to skip functions with blank # of calls, make fcalls = -1
-               fcalls = -1
+               fcalls = 0
                sms_call = 0  # if it's blank, make it 0
                if not (v.group(4) in funcIDMap):
                   funcIDMap[v.group(4)] = nextFunctionID
@@ -226,6 +226,7 @@ def outputData(totSteps, rank):
                # this will be used as input data for clustering
 
                interval.append([k+1,step[k+1]-pstep[k+1]]) 
+               #interval.append([k+1,1])
 
                # Use the rank in the gmon.data file for experiemrents
                #interval.append([k+1,rank[k+1]])#(step[k+1]-pstep[k+1])])

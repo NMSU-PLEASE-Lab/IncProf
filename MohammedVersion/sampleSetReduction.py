@@ -104,7 +104,7 @@ def gensvm(filename, fileNum):
                fid = funcIDMap[v.group(7)]
             else:
                # to skip functions with blank # of calls, make fcalls = -1
-               fcalls = -1
+               fcalls = 0
                sms_call = 0  # if it's blank, make it 0
 
                if not (v.group(4) in funcIDMap):
@@ -180,6 +180,7 @@ def outputData(totSteps):
                continue
             else:
                interval.append([k+1,round(step[k+1]-pstep[k+1],4),step[k+2]-pstep[k+2]])
+               #interval.append([k+1,1,step[k+2]-pstep[k+2]])
                mylist.append(k)
          # num calls is processed using fraction of total, to keep < 1
 
