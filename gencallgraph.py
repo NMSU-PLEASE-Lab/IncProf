@@ -279,7 +279,7 @@ def processFlatProfileLine(line, cgraph):
       fcalls = 0
       funcName = v.group(4)
    if funcName in cgraph.flatProfileData:
-      print("Error: function already in flat profile: {0}".format(funcName))
+      print("Error: already in flat profile: {0}".format(funcName))
    cgraph.flatProfileData[funcName] = (fpct,fstime,fcalls)
    cgraph.totalExecutionTime = totalExecutionTime
    return True
@@ -370,7 +370,8 @@ else:
          continue
       v = re.match(dirPattern,f.name)
       if v is None:
-         print("filename {0} does not match pattern |{1}|".format(f.name, dirPattern))
+         if debug: print("filename {0} does not match pattern |{1}|".format(
+                         f.name, dirPattern))
          continue
       ind = int(v.group(1))
       proFile = "{0}/{1}".format(args.bindir[1],f.name)
@@ -389,15 +390,21 @@ else:
       #for n in cgraph.nodeTable:
       #   node = cgraph.nodeTable[n]
       #   node.printMe()
+   # convert dict into ordered list (use it instead of dict???)
+   cglist = []
+   for i in range(maxind+1):
+      if i in cgs and cgs[i] != None:
+         cglist.append(cgs[i])
    print("Read {0} profiles...".format(maxind))
    # CallGraph data must be subtracted starting at end!
    # - might be missing some indices
    inds = []
-   for i in reversed(range(1,maxind)):
+   for i in reversed(range(1,maxind+1)):
       if i in cgs:
          inds.append(i)
    for i in range(len(inds)-1):
-      cgs[inds[i+1]].subtractCallGraph(cgs[inds[i]])
+      print("subtracting CG {0} from CG {1}".format(inds[i+1],inds[i]))
+      cgs[inds[i]].subtractCallGraph(cgs[inds[i+1]])
    CallGraph.outputSVMData("cldata.svm",cgs,mode)
    #for i in range(maxind):
    #   if debug: print(cgs[i+1])

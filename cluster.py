@@ -356,12 +356,13 @@ def doKMeansClustering():
 # Work in Progress: experiment with DBSCAN clustering
 # -- not sure yet how to process the results
 #--------------------------------------------------------------
-def doDbscanClustering(fnames):
+def doDbscanClustering(fnames,epsilon):
    centroids = []
    cld = []
    clparms = []
    basedist = 0
-   epsilon = 0.07
+   #epsilon = 0.07
+   print("DBSCAN: epsilon = {0}".format(epsilon))
    if False:
       # this was just an experiment, should remove it I guess
       c = sklearn.cluster.DBSCAN(eps=epsilon, metric='manhattan', min_samples=2).fit(X)
@@ -457,12 +458,14 @@ argParser.add_argument('namefile', metavar='name-map-file', type=str, help='name
 argParser.add_argument('--debug', action='store_true', help='turn on debugging info (default off)')
 argParser.add_argument('--flip', action='store_true', help='flip name map format (default: off)')
 argParser.add_argument('--alg', action='store', default='kmeans', metavar='<kmeans|dbscan>', help='clustering algorithm (default: kmeans)')
+argParser.add_argument('--eps', action='store', type=float, default=0.07, metavar='0.0-3.0', help='DBSCAN epsilon parameter')
 args = argParser.parse_args()
 debug = args.debug
 algorithm = args.alg
 dataFilename = args.svmfile
 idmapFilename = args.namefile
 flip = args.flip
+dbscanEps = args.eps
 
 #
 # Load Id Map if available
@@ -512,5 +515,5 @@ if debug:
 if algorithm == "kmeans":
    doKMeansClustering()
 elif algorithm == "dbscan":
-   doDbscanClustering(0)
+   doDbscanClustering(0,dbscanEps)
 

@@ -145,6 +145,8 @@ class CallGraph(object):
    # - used to create interval data rather than cumulative
    #
    def subtractCallGraph(self,othercg):
+      print("  subtract: selftime {0}   othertime {1}".format(
+            self.totalExecutionTime, othercg.totalExecutionTime))
       for nid in othercg.nodeTable:
          onode = othercg.nodeTable[nid]
          snode = None
