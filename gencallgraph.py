@@ -293,7 +293,7 @@ def reduceCGSequence(cgs, factor):
    newcgid = 1
    count = 0
    if debug: print("reduce {0} graphs...".format(len(cgs)))
-   for cgi in cgs:
+   for cgi in sorted(cgs):
       if count == 0:
          # start out new reduction call graph
          if debug: print("start a new graph")
