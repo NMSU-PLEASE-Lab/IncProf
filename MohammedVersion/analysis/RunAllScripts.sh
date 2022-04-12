@@ -43,17 +43,12 @@ then
 fi
 
 # Generate the SVM file which is used as an input for Kmeans clustering
-
-#echo "### Generate SVM file"
-#python ${INCPROF_PATH}/gensvm.py $1 "$gmon_regexp" rank.svm > gmon.svm
 # Generate data file with functions time difference and function
 # call count and rank file for each function
-echo "### Generate Data file and rank file"
+echo "### Generate SVM, data, and rank files"
 python ${INCPROF_PATH}/sampleSetReduction.py $1 "$gmon_regexp"
-#echo "### Generate SVM file"
-#python ${INCPROF_PATH}/gensvm.py $1 "$gmon_regexp" rank.svm > gmon.svm
 
 # print the best instrumentation points for elbowk
-echo "### find phases and inst points"
-python ${INCPROF_PATH}/algorithm2.py gmon.data svmfmap.txt rank.svm gmon.svm $2 $3 > instPoints.out
+echo "### Find phases and inst points"
+python ${INCPROF_PATH}/algorithm2.py gmon.data svmfmap.txt rank.svm gmon.svm $2 $3 
 
