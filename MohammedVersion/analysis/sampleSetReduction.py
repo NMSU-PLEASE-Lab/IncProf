@@ -97,32 +97,32 @@ def generate_svm(filename):
             # for all lines, with or without blank values, get the function % time, cumulative sec, and 
             # self sec
             if v != None:
-                fpct = float(v.group(1))
-                fttime = float(v.group(2))
-                fstime = float(v.group(3))
+                percTime = float(v.group(1)) # % time
+                cumTime = float(v.group(2)) # cumulative seconds
+                selfTime = float(v.group(3)) # self seconds
                 # if the line has no blanks, get the values of calls and self ms/call 
                 if short == 0:
-                    sms_call = float(v.group(5)) # self ms/call, added to skip functions with 0 value
-                    fcalls = int(v.group(4))
-                    # 5 and 6 are self ms/call and tot ms/call
+                    selfCallTime = float(v.group(5)) # self ms/call, added to skip functions with 0 value
+                    calls = int(v.group(4)) # calls
+                    # 6 is total ms/call
                     # add the function name to funcIDMap dictionary if not added (fname: funID)
                     if not (v.group(7) in funcIDMap):
                         funcIDMap[v.group(7)] = nextFunctionID
                         nextFunctionID += 1
-                    fid = funcIDMap[v.group(7)]
+                    funcID = funcIDMap[v.group(7)]
                 else:
                     # if calls and self ms/call are blank, make them 0
-                    fcalls = 0
-                    sms_call = 0  
+                    calls = 0
+                    selfCallTime = 0  
 
                     if not (v.group(4) in funcIDMap):
                         funcIDMap[v.group(4)] = nextFunctionID
                         nextFunctionID += 1
-                    fid = funcIDMap[v.group(4)]
+                    funcID = funcIDMap[v.group(4)]
                 # create a list of each function in the file
                 # each list holds funID, % time, cumulative sec, self sec, calls, and self ms/call
                 # add the created list to fdata list
-                fdata.append([fid, fpct, fttime, fstime, fcalls, sms_call])
+                fdata.append([funcID, percTime, cumTime, selfTime, calls, selfCallTime])
     inf.close()
     # Put all function data together in one list for the sample step
     # - must iterate through fdata (function data) and then add required data to

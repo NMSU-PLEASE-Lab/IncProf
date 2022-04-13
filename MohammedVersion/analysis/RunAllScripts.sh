@@ -1,7 +1,7 @@
 
 #!/bin/bash
 #
-# Usage: script <exec-file> <regexp>
+# Usage: RunAllScripts.sh <exec-file> <regexp> <elbow|silhoutte>
 #
 # this script should not need any setting of a path, it figures
 # it out on its own
@@ -18,7 +18,7 @@ echo "Using IncProf path ${INCPROF_PATH}"
 if [ "$#" -lt 1 ]
 then
     echo "Illegal number of parameters!!!"
-    echo "Usage: DiscoverInst <exec-file> <elbow|silhouette>"
+    echo "Usage: RunAllScripts.sh <exec-file> <elbow|silhouette>"
     exit
 fi
 # Remove previous generated files
@@ -48,7 +48,7 @@ fi
 echo "### Generate SVM, data, and rank files"
 python ${INCPROF_PATH}/sampleSetReduction.py $1 "$gmon_regexp"
 
-# print the best instrumentation points for elbowk
+# print the best instrumentation points
 echo "### Find phases and inst points"
 python ${INCPROF_PATH}/algorithm2.py gmon.data svmfmap.txt rank.svm gmon.svm $2 $3 
 

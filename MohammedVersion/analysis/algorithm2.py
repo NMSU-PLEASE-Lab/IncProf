@@ -464,7 +464,6 @@ datafile = open(sys.argv[1])
 idmapFilename = sys.argv[2]
 rfile = open(sys.argv[3])
 ssfile = sys.argv[4]
-print(type(ssfile))
 method = sys.argv[5]
 idmap = None
 if idmapFilename != "":
@@ -501,7 +500,7 @@ for i in range(len(reduced_data)):
     interfile.write("\n")"""
 # list of k values
 range_n_clusters = [1,2,3,4,5,6,7,8]
-# run kmeans algorithm using different values of K(# of clusters)
+# run kmeans algorithm using different values of k(# of clusters)
 kmeanrun = run_kmeans(X,range_n_clusters)
 interias = kmeanrun[3]
 silhouette = kmeanrun[4]
@@ -564,8 +563,8 @@ pathToOptK.append(optK)
 # print min(distances[0])
 #indices = [i for i, x in enumerate(distances) if x == min(distances)]
 # Show the values of optimal ks till the non-overlapped phases produced
-for n in pathToOptK:
-    print("{0}\t{1}".format(n,silhouette[n-1]))
+#for n in pathToOptK:
+#    print("{0}\t{1}".format(n,silhouette[n-1]))
 
 # This part to plot the clusters, not used
 """colors = ['#8B0000', '#BC8F8F','#FFFF00','#008000','#FFC0CB', '#F0F8FF']
