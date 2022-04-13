@@ -8,11 +8,11 @@
 
 #
 # This script will use the cluster information to produce a list of functions that is 
-# recommended to instrument in the scientafic application to produce phases and 
+# recommended to instrument in the scientific application to produce phases and 
 # heartbeat information
 #
-# It uses clustering algorithm called k-means to chategorize the intervals into phases
-# To find the optimal number of clusters, two method are used, elbow or silouette
+# It uses clustering algorithm called k-means to categorize the intervals into phases
+# To find the optimal number of clusters, two method are used, elbow or silhouette
 # Users can specify which method to use
 #
 import re
@@ -73,7 +73,7 @@ def load_id_map(filename,flip):
 
 #-------------------------- end of load_id_map --------------------------#
 
-# Laod the rank of each function from rank file.
+# Load the rank of each function from rank file.
 # rfile: file contains the function IDs and their ranks
 # returns a dictionary (ID:rank)
 def find_rank(rfile):
@@ -117,7 +117,7 @@ def find_optimalK_elbow(clParams):
 #----------------------- end of find_optimalK_elbow -----------------------#
 
 # Find optimal k using silhouette coefficient
-# Check the silhiuette average for each k and return the one
+# Check the silhouette average for each k and return the one
 # with max silhouette value
 # silhouette: list of the silhouette values of all ks
 # returns the optimal k 
@@ -197,26 +197,26 @@ def run_kmeans(X, cluster_range):
 # find intervals for each cluster from the data file (gmon.data)
 # datafile: gmon.data file
 # rank: a dictionary (ID:rank)
-# distances: a list of list of distances of a all sample to all centriods, 
-# i.e., k=2 -> [d1, d2], where d1 is distance to cetroid1 and d2 to centriod2
+# distances: a list of list of distances of a all sample to all centroids, 
+# i.e., k=2 -> [d1, d2], where d1 is distance to centroid1 and d2 to centroid2
 # labels: list of labels of data samples
 #
 # returns a list of lists of clusters, where each list contains the data of intervals of a cluster.
 # Each interval is a list of tupels, where a tuple is a function with its data and the last element
-# of each interval is the distance of the interval to its related centriods.
+# of each interval is the distance of the interval to its related centroids.
 def find_intervals(datafile,rank,distances,labels, k):
     intervals = []
     # read datafile lines
     for line in datafile:
-        # split the line to array of function indeces
+        # split the line to array of function indices
         # i.e.,  0 1:0.06:4142381 2:0.03:0 -> ['0', '1:0.06:4142381', '2:0.03:0', '\n']
         strs = line.split(" ")
         tmp = []
         n = 0
         for s in strs:
-            # skip the first colomn in the data file and the new line(\n)
+            # skip the first column in the data file and the new line(\n)
             if s != "\n" and n != 0:
-                # get id, calls and rank for each function. To get the rank of a function, the id needed to retrive it from rank dictionery
+                # get id, calls and rank for each function. To get the rank of a function, the id needed to retrive it from rank dictionary
                 tmp.append((int(s.split(":")[0]),int(s.split(":")[2]),float(s.split(":")[1]),rank[int(s.split(":")[0])]))
             # if no more data in each interval, add tmp to intervals list
             if s == "\n":
@@ -259,7 +259,7 @@ def find_inst_points(Clusters, k):
         funcIDs.append([])
     for i in range(0,k):
         # Sort intervals in Ci by distance to the centroid
-        # distence is the last element of each interval
+        # distance is the last element of each interval
         Clusters[i].sort(key=lambda f: f[-1], reverse = False)
         for inter in Clusters[i]:
             covered = 0
@@ -300,7 +300,7 @@ def find_inst_points(Clusters, k):
     return(phases,Clusters,funcIDs,instPoints)
 #----------------------- end of find_inst_points -----------------------#
 
-# This finction to find the coverage of each instrumentation point
+# This function to find the coverage of each instrumentation point
 # After finding the instrumentation points, check the data to find the coverage
 # phasesFuncIds: list of clusters, where each cluster contain the ids of function
 # selected as instrumention site
@@ -308,10 +308,10 @@ def find_inst_points(Clusters, k):
 #
 # it returns:
 # - a list of the coverrage percentage of each inst site in its phase
-#   it's computed by dividing # of interval cover the inst piont by # of insterval of the 
+#   it's computed by dividing # of interval cover the inst point by # of insterval of the 
 #   related phase
 # - a list of the coverrage percentage of each inst site over the whole execution
-#   it's computed by dividing # of interval cover the inst piont by # of insterval of the
+#   it's computed by dividing # of interval cover the inst point by # of insterval of the
 #   whole execution
 #  
 def find_coverage(phasesFuncIds, clusterFuncIDs):
@@ -350,7 +350,7 @@ def find_coverage(phasesFuncIds, clusterFuncIDs):
 # 
 # it checks the inst points of each phase with inst points with other phases
 #
-# returns True if there is ovelapping, False otherwise
+# returns True if there is overlapping, False otherwise
 def is_overlapped(phases, k):
     overlapped = False
     for i in range(0, k):
@@ -390,7 +390,8 @@ def print_clusters(phases, fullCoverage, phaseCoverage, k):
             f.append(phaseCoverage[i][j])
             f.append(fullCoverage[i][j])
     
-        # sort functions in phases descendingly based on the phase coverage to select more representative functions
+        # sort functions in phases in descending based on the phase 
+        # coverage to select more representative functions
         phases[i].sort(key=lambda x:(x[2]),reverse=True)
     # create a file to print the inst points
     instfile = open("instpoints.txt", "w")
@@ -481,7 +482,8 @@ scaled = transformer.transform(X).toarray()
 # return a dense ndarray representation of this matrix
 M =  X.toarray()
 
-# linear dimensionality reduction using Singular Value Decomposition of the data to project it to a lower dimensional space.
+# linear dimensionality reduction using Singular Value Decomposition
+# of the data to project it to a lower dimensional space.
 pca = PCA(n_components=2)
 # fit the model with X and apply the dimensionality reduction on X.
 reduced_data = pca.fit_transform(M)
@@ -499,13 +501,13 @@ for i in range(len(reduced_data)):
     interfile.write("\n")"""
 # list of k values
 range_n_clusters = [1,2,3,4,5,6,7,8]
-# run kmeans algorithim using different values of K(# of clusters)
+# run kmeans algorithm using different values of K(# of clusters)
 kmeanrun = run_kmeans(X,range_n_clusters)
 interias = kmeanrun[3]
 silhouette = kmeanrun[4]
 # optimal k
 optK = 0
-# find optimal k based on the specefied method
+# find optimal k based on the specified method
 if method == "elbow":
     optK = find_optimalK_elbow(kmeanrun[2])[0]
 else:

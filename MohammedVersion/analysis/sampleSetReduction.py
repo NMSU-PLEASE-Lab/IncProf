@@ -28,7 +28,7 @@
 #    only used to calculate accuracy or errors. If they are unknown, just 
 #    fill the first column with any numbers.
 # 
-# It also generates the data file (gmon.data), which holds the requiered data 
+# It also generates the data file (gmon.data), which holds the required data 
 # for the analysis such as calls and self time.
 
 #
@@ -100,7 +100,7 @@ def generate_svm(filename):
                 fpct = float(v.group(1))
                 fttime = float(v.group(2))
                 fstime = float(v.group(3))
-                # if the line has no blanks, get the values of calls and self ms/calll 
+                # if the line has no blanks, get the values of calls and self ms/call 
                 if short == 0:
                     sms_call = float(v.group(5)) # self ms/call, added to skip functions with 0 value
                     fcalls = int(v.group(4))
@@ -160,11 +160,11 @@ def output_data():
         # function ids to do difference between corresponding functions
         step.sort(key=lambda x: int(x[0]))
         pstep.sort(key=lambda x: x[0])
-        # extend the prevous step to make it's size same as the current step 
+        # extend the previous step to make it's size same as the current step 
         pstep.extend([[0,0,0,0]]* (len(step) - len(pstep)))
-        # create an interval to hold the diference data between current and previous step
+        # create an interval to hold the difference data between current and previous step
         interval = []
-        # itterate over the functions of each step and compute the difference with the 
+        # iterate over the functions of each step and compute the difference with the 
         # correspending function from the previous step
         for j, func in enumerate(step):
             if abs(func[2]-pstep[j][2]) > 0.00:
@@ -240,7 +240,7 @@ def output_functions_rank():
 if len(sys.argv) != 3:
     print("Usage: {0} <exec-binary-filename> <filenames-regexp>".format(sys.argv[0]))
     exit(1)
-# get the programm executable file to generate gmon files
+# get the program executable file to generate gmon files
 progFile = sys.argv[1]
 filename_regexp = sys.argv[2]
 
@@ -256,7 +256,7 @@ noOfFiles = len(listOfFiles)
 proc_num = listOfFiles[noOfFiles-1].split(".")[1]
 # get the start of the file name (i.e., gmon-328.1441 -> gmon)
 pref_filename = listOfFiles[noOfFiles-1].split("-")[0]
-# itterate over the list of file names in assending order to generate
+# iterate over the list of file names in assending order to generate
 # gmon file and find all active functions in the files
 for entry in listOfFiles:
     fname = pref_filename+"-"+str(i)+"."+str(proc_num)
